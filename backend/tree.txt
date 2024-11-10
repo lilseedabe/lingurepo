@@ -1,0 +1,118 @@
+.
+├── LICENSE
+├── MANIFEST.in
+├── README.md
+├── api
+│   ├── __pycache__
+│   │   └── main.cpython-311.pyc
+│   ├── main.py
+│   └── routers
+│       ├── __init__.py
+│       ├── __pycache__
+│       └── lingu_struct_router.py
+├── generate_api_keys.py
+├── licenses.json
+├── lingustruct
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-311.pyc
+│   │   ├── ai_support.cpython-311.pyc
+│   │   ├── converters.cpython-311.pyc
+│   │   ├── core.cpython-311.pyc
+│   │   ├── license_manager.cpython-311.pyc
+│   │   ├── rate_limiter.cpython-311.pyc
+│   │   ├── security.cpython-311.pyc
+│   │   ├── templates.cpython-311.pyc
+│   │   ├── utils.cpython-311.pyc
+│   │   └── validator.cpython-311.pyc
+│   ├── ai_support.py
+│   ├── converters.py
+│   ├── core.py
+│   ├── data
+│   │   └── data.json
+│   ├── license_manager.py
+│   ├── licensing.py
+│   ├── mappings
+│   │   └── key_mapping.json
+│   ├── rate_limiter.py
+│   ├── security.py
+│   ├── templates
+│   │   ├── m1.json
+│   │   ├── m10.json
+│   │   ├── m10_s.json
+│   │   ├── m1_s.json
+│   │   ├── m2.json
+│   │   ├── m2_s.json
+│   │   ├── m3.json
+│   │   ├── m3_s.json
+│   │   ├── m4.json
+│   │   ├── m4_s.json
+│   │   ├── m5.json
+│   │   ├── m5_s.json
+│   │   ├── m6.json
+│   │   ├── m6_s.json
+│   │   ├── m7.json
+│   │   ├── m7_s.json
+│   │   ├── m8.json
+│   │   ├── m8_s.json
+│   │   ├── m9.json
+│   │   ├── m9_s.json
+│   │   ├── master_template.json
+│   │   └── overview_template.json
+│   ├── templates.py
+│   ├── utils.py
+│   └── validator.py
+├── master.json
+├── pyproject.toml
+├── requirements.txt
+├── scripts
+│   ├── encrypt_templates.py
+│   └── generate_project.py
+├── setup.py
+├── tests
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-311.pyc
+│   │   └── test_api.cpython-311-pytest-8.3.3.pyc
+│   ├── test_api.py
+│   ├── test_converters.py
+│   └── test_core.py
+├── tree.txt
+└── venv
+    ├── bin
+    │   ├── Activate.ps1
+    │   ├── activate
+    │   ├── activate.csh
+    │   ├── activate.fish
+    │   ├── distro
+    │   ├── dotenv
+    │   ├── fastapi
+    │   ├── fonttools
+    │   ├── httpx
+    │   ├── jsonschema
+    │   ├── markdown_py
+    │   ├── normalizer
+    │   ├── openai
+    │   ├── pip
+    │   ├── pip3
+    │   ├── pip3.11
+    │   ├── py.test
+    │   ├── pyftmerge
+    │   ├── pyftsubset
+    │   ├── pytest
+    │   ├── python -> python3.11
+    │   ├── python3 -> python3.11
+    │   ├── python3.11 -> /Library/Frameworks/Python.framework/Versions/3.11/bin/python3.11
+    │   ├── tqdm
+    │   ├── ttx
+    │   ├── uvicorn
+    │   └── weasyprint
+    ├── include
+    │   └── python3.11
+    ├── lib
+    │   └── python3.11
+    ├── pyvenv.cfg
+    └── share
+        └── man
+
+21 directories, 95 files

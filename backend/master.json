@@ -1,0 +1,20 @@
+{
+  "meta": {
+      "document_type": "system_design_document",
+      "description": "This document defines the architecture, dependencies, priorities, and components of the system."
+  },
+  "project_id": "test_project",
+  "version": "1.0",
+  "modules": [
+      { "id": 1, "path": "lingustruct/templates/m1.json", "schema": "lingustruct/templates/m1_s.json", "dependencies": [] },
+      { "id": 2, "path": "lingustruct/templates/m2.json", "schema": "lingustruct/templates/m2_s.json", "dependencies": [1] },
+      { "id": 3, "path": "lingustruct/templates/m3.json", "schema": "lingustruct/templates/m3_s.json", "dependencies": [1, 2] },
+      { "id": 4, "path": "lingustruct/templates/m4.json", "schema": "lingustruct/templates/m4_s.json", "dependencies": [1] },
+      { "id": 5, "path": "lingustruct/templates/m5.json", "schema": "lingustruct/templates/m5_s.json", "dependencies": [1] },
+      { "id": 6, "path": "lingustruct/templates/m6.json", "schema": "lingustruct/templates/m6_s.json", "dependencies": [1] },
+      { "id": 7, "path": "lingustruct/templates/m7.json", "schema": "lingustruct/templates/m7_s.json", "dependencies": [1, 2] },
+      { "id": 8, "path": "lingustruct/templates/m8.json", "schema": "lingustruct/templates/m8_s.json", "dependencies": [1, 2, 3] },
+      { "id": 9, "path": "lingustruct/templates/m9.json", "schema": "lingustruct/templates/m9_s.json", "dependencies": [1] },
+      { "id": 10, "path": "lingustruct/templates/m10.json", "schema": "lingustruct/templates/m10_s.json", "dependencies": [1, 2, 5, 6] }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+    "free-license-key": {
+        "user": "free_user",
+        "plan": "free",
+        "calls_remaining": 5
+    },
+    "premium-license-key": {
+        "user": "premium_user",
+        "plan": "premium",
+        "calls_remaining": null
+    }
+}
