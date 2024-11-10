@@ -1,6 +1,0 @@
-[
-  "tests/test_api.py::test_generate_master",
-  "tests/test_api.py::test_get_module",
-  "tests/test_api.py::test_invalid_request",
-  "tests/test_api.py::test_rate_limit"
-]
