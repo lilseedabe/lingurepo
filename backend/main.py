@@ -1,3 +1,5 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from components.config import load_environment
 from components.api_clients import APIClients
 from components.data_fetcher import DataFetcher
@@ -6,12 +8,33 @@ from components.mapper import Mapper
 from components.document_generator import DocumentGenerator
 from utils.logger import setup_logger
 import json
+from fastapi.middleware.cors import CORSMiddleware
 
 logger = setup_logger(__name__)
+app = FastAPI()
 
-def generate_design_document():
+# CORS設定
+origins = [
+    "http://localhost:3000",  # フロントエンドのURL
+    # 必要に応じて他のオリジンを追加
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class DesignDocumentRequest(BaseModel):
+    repo_name: str
+    branch_name: str
+
+@app.post("/generate-design-document")
+async def generate_design_document_endpoint(request: DesignDocumentRequest):
     try:
-        # 環境変数のロードと検証
+        # 環境変数のロードと検証（APIキーなどは.envから取得）
         env = load_environment()
         logger.info("Environment variables loaded successfully")
         
@@ -25,10 +48,10 @@ def generate_design_document():
         
         # データ取得
         fetcher = DataFetcher(api_clients)
-        readme_content = fetcher.fetch_readme_content(env['REPO_NAME'], env['BRANCH_NAME'])
+        readme_content = fetcher.fetch_readme_content(request.repo_name, request.branch_name)
         if not readme_content:
             logger.warning("README.md content could not be fetched")
-            return
+            raise HTTPException(status_code=404, detail="README.md content could not be fetched")
         
         # 解析
         parser = Parser(api_clients, env['LINGUSTRUCT_LICENSE_KEY'])
@@ -36,38 +59,28 @@ def generate_design_document():
         parsing_rules = parser.get_parsing_rules(key_mapping)
         parsed_data = parser.parse_readme(readme_content, parsing_rules)
 
-        # parsed_data の内容を確認
-        logger.info("Parsed data output:")
-        logger.info(json.dumps(parsed_data, indent=4, ensure_ascii=False))
-        
         # マッピング
         mapper = Mapper(key_mapping)
         mapped_data = mapper.map_data(parsed_data)
         if not mapped_data:
             logger.warning("No data was mapped successfully")
-            return
+            raise HTTPException(status_code=400, detail="No data was mapped successfully")
         
-        # mapped_data の内容を確認
-        logger.info("Mapped data output:")
-        logger.info(json.dumps(mapped_data, indent=4, ensure_ascii=False))
-
         # ドキュメント生成
         generator = DocumentGenerator(env['LINGUSTRUCT_LICENSE_KEY'])
         final_document = generator.generate_final_document(mapped_data)
-        if final_document:
-            logger.info("Design document generation completed successfully")
-            logger.info(f"Final Document:\n{json.dumps(final_document, indent=4, ensure_ascii=False)}")
-            return final_document
+        if not final_document:
+            logger.warning("Final document could not be generated")
+            raise HTTPException(status_code=500, detail="Final document could not be generated")
+        
+        return {"final_document": final_document}
     
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        logger.error(f"Error in generate_design_document: {e}", exc_info=True)
-        raise
+        logger.error(f"Error in generate_design_document_endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 if __name__ == "__main__":
-    try:
-        logger.info("Starting design document generation process")
-        generate_design_document()
-        logger.info("Process completed")
-    except Exception as e:
-        logger.error("Process failed", exc_info=True)
-        raise
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

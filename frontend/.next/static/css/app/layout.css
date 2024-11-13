@@ -578,8 +578,9 @@ video {
   border-color: hsl(var(--border));
 }
   body {
+  overflow: auto;
   background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
+  color: hsl(var(--foreground)); /* スクロールを許可 */
 }
 .container {
   width: 100%;
@@ -625,6 +626,9 @@ video {
   white-space: nowrap;
   border-width: 0;
 }
+.pointer-events-none {
+  pointer-events: none;
+}
 .fixed {
   position: fixed;
 }
@@ -664,6 +668,9 @@ video {
 }
 .mb-2 {
   margin-bottom: 0.5rem;
+}
+.mb-4 {
+  margin-bottom: 1rem;
 }
 .ml-4 {
   margin-left: 1rem;
@@ -716,8 +723,14 @@ video {
 .h-\[300px\] {
   height: 300px;
 }
+.h-\[calc\(100vh-16rem\)\] {
+  height: calc(100vh - 16rem);
+}
 .h-full {
   height: 100%;
+}
+.h-screen {
+  height: 100vh;
 }
 .min-h-\[80px\] {
   min-height: 80px;
@@ -745,6 +758,9 @@ video {
 }
 .max-w-6xl {
   max-width: 72rem;
+}
+.max-w-full {
+  max-width: 100%;
 }
 .max-w-lg {
   max-width: 32rem;
@@ -843,6 +859,9 @@ video {
 .self-end {
   align-self: flex-end;
 }
+.overflow-auto {
+  overflow: auto;
+}
 .overflow-hidden {
   overflow: hidden;
 }
@@ -918,6 +937,9 @@ video {
 .p-1 {
   padding: 0.25rem;
 }
+.p-2 {
+  padding: 0.5rem;
+}
 .p-4 {
   padding: 1rem;
 }
@@ -946,6 +968,9 @@ video {
 .py-2 {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
+}
+.pr-4 {
+  padding-right: 1rem;
 }
 .pt-0 {
   padding-top: 0px;
@@ -1086,6 +1111,14 @@ video {
 }
 .duration-200 {
   animation-duration: 200ms;
+}
+
+/* 全体の高さとスクロール設定 */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: auto; /* スクロールを許可 */
 }
 
 body {
@@ -1301,6 +1334,18 @@ body {
     margin-left: calc(0.5rem * calc(1 - var(--tw-space-x-reverse)));
   }
 
+  .sm\:space-x-4 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 0;
+    margin-right: calc(1rem * var(--tw-space-x-reverse));
+    margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse)));
+  }
+
+  .sm\:space-y-0 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-y-reverse: 0;
+    margin-top: calc(0px * calc(1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc(0px * var(--tw-space-y-reverse));
+  }
+
   .sm\:rounded-lg {
     border-radius: var(--radius);
   }
@@ -1311,6 +1356,10 @@ body {
 }
 
 @media (min-width: 768px) {
+
+  .md\:p-8 {
+    padding: 2rem;
+  }
 
   .md\:text-sm {
     font-size: 0.875rem;

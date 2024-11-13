@@ -1,18 +1,18 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'; // React を明示的にインポート
-import { ThemeProvider, useTheme } from 'next-themes';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
-import { toast } from "@/hooks/use-toast";
+import React, { useState, useEffect, useRef } from 'react'
+import { ThemeProvider, useTheme } from 'next-themes'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Progress } from "@/components/ui/progress"
+import { toast } from "@/hooks/use-toast"
 
 type FileType = { name: string; type: 'file' | 'directory'; path: string };
 type FileHistoryType = { date: string; author: string; message: string };
@@ -251,8 +251,8 @@ function ParticleAnimation() {
 
       // 光る線を描画・更新
       glowingLines = glowingLines.filter(line => {
-        const startPoint = points[line.start];
-        const endPoint = points[line.end];
+        const startPoint = points[line.start]
+        const endPoint = points[line.end]
         const gradient = ctx.createLinearGradient(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
         
         // テーマに応じて色を変更
@@ -264,16 +264,16 @@ function ParticleAnimation() {
         gradient.addColorStop(0.5, glowColor);
         gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
 
-        ctx.beginPath();
-        ctx.moveTo(startPoint.x, startPoint.y);
-        ctx.lineTo(endPoint.x, endPoint.y);
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        ctx.beginPath()
+        ctx.moveTo(startPoint.x, startPoint.y)
+        ctx.lineTo(endPoint.x, endPoint.y)
+        ctx.strokeStyle = gradient
+        ctx.lineWidth = 2
+        ctx.stroke()
 
-        line.progress += 1 / (line.duration / 16); // 60FPSを想定
-        return line.progress < 1;
-      });
+        line.progress += 1 / (line.duration / 16) // 60FPSを想定
+        return line.progress < 1
+      })
 
       animationId = requestAnimationFrame(animate)
     }
@@ -282,14 +282,14 @@ function ParticleAnimation() {
 
     return () => {
       window.removeEventListener('resize', resizeCanvas)
-      cancelAnimationFrame(animationId);
+      cancelAnimationFrame(animationId)
     }
   }, [theme])
 
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full"
+      className="absolute inset-0 w-full h-full pointer-events-none"
       aria-hidden="true"
     />
   )
@@ -321,36 +321,53 @@ export function BlockPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!repoName || !branchName) {
+      toast({
+        title: language === 'en' ? "Please enter both repository name and branch name." : "リポジトリ名とブランチ名を入力してください。",
+        description: language === 'en' ? "Both fields are required." : "両方のフィールドを埋めてください。",
+        variant: "destructive",
+      });
+      return
+    }
+
     setIsLoading(true)
     setAnalysisProgress(0)
+    setCurrentStep(1)
+
     try {
       toast({
-        title: t.fetchingFiles,
-        description: t.processing,
+        title: language === 'en' ? t.fetchingFiles : t.fetchingFiles,
+        description: language === 'en' ? t.processing : t.processing,
       })
-      // Simulate fetching repository structure
-      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      // バックエンドAPIにリクエストを送信
+      const response = await fetch('http://localhost:8000/generate-design-document', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ repo_name: repoName, branch_name: branchName })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || (language === 'en' ? "An error occurred." : "エラーが発生しました。"))
+      }
+
+      const data = await response.json()
+      setFinalDocument(JSON.stringify(data.final_document, null, 2))
       setAnalysisProgress(100)
-      setFiles([
-        { name: 'src', type: 'directory', path: 'src' },
-        { name: 'README.md', type: 'file', path: 'README.md' },
-        { name: 'package.json', type: 'file', path: 'package.json' },
-        { name: 'main.py', type: 'file', path: 'src/main.py' },
-        { name: 'components', type: 'directory', path: 'src/components' },
-        { name: 'parser.py', type: 'file', path: 'src/components/parser.py' },
-        { name: 'utils', type: 'directory', path: 'src/utils' },
-        { name: 'logger.py', type: 'file', path: 'src/utils/logger.py' },
-      ])
+      setAnalysisComplete(true)
       toast({
-        title: t.repoFiles,
-        description: t.selectFilesToAnalyze,
+        title: language === 'en' ? t.analysisComplete : t.analysisComplete,
+        description: language === 'en' ? t.viewResults : t.viewResults,
       })
-      setCurrentStep(2)
-    } catch (error) {
-      console.error('Error fetching repository structure:', error)
+      setCurrentStep(3)
+    } catch (error: any) {
+      console.error('Error during analysis:', error)
       toast({
-        title: "Error fetching repository structure",
-        description: "An error occurred while fetching the repository structure.",
+        title: language === 'en' ? "Error" : "エラー",
+        description: error.message || (language === 'en' ? "An error occurred during analysis." : "分析中にエラーが発生しました。"),
         variant: "destructive",
       })
     } finally {
@@ -358,14 +375,51 @@ export function BlockPage() {
     }
   }
 
-  const handleFileSelect = (filePath: string) => {
-    setSelectedFile(filePath)
-    // Simulate fetching file content
-    setFileContent(`# ${filePath}\n\nThis is a placeholder content for ${filePath}. In a real application, this would be fetched from the repository.`)
-    setFileHistory([
-      { date: '2023-05-01', author: 'John Doe', message: 'Initial commit' },
-      { date: '2023-05-15', author: 'Jane Smith', message: 'Updated file structure' },
-    ])
+  const handleExport = () => {
+    const blob = new Blob([finalDocument], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'lingurepo-design-document.json'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleSelectAll = () => {
+    if (allSelected) {
+      setSelectedFiles([]);
+    } else {
+      setSelectedFiles(files.filter(file => file.type === 'file').map(file => file.path));
+    }
+    setAllSelected(!allSelected);
+  };
+
+  const renderFileTree = (files: FileType[], depth = 0) => {
+    return (
+      <ul className={`space-y-1 ${depth > 0 ? 'ml-4' : ''}`}>
+        {files.map((file, index) => (
+          <li key={index} className="flex items-center space-x-2">
+            <span className="w-4 h-4 text-xs">
+              {file.type === 'directory' ? '📁' : '📄'}
+            </span>
+            <Checkbox
+              id={`file-${file.path}`}
+              checked={selectedFiles.includes(file.path)}
+              onCheckedChange={(checked) => handleFileCheckboxChange(file.path, checked as boolean)}
+            />
+            <label
+              htmlFor={`file-${file.path}`}
+              className="text-sm cursor-pointer hover:underline"
+              onClick={() => file.type === 'file' && handleFileSelect(file.path)}
+            >
+              {file.name}
+            </label>
+          </li>
+        ))}
+      </ul>
+    )
   }
 
   const handleFileCheckboxChange = (filePath: string, checked: boolean) => {
@@ -378,11 +432,21 @@ export function BlockPage() {
     });
   }
 
+  const handleFileSelect = (filePath: string) => {
+    setSelectedFile(filePath)
+    // Simulate fetching file content
+    setFileContent(`# ${filePath}\n\nThis is a placeholder content for ${filePath}. In a real application, this would be fetched from the repository.`)
+    setFileHistory([
+      { date: '2023-05-01', author: 'John Doe', message: 'Initial commit' },
+      { date: '2023-05-15', author: 'Jane Smith', message: 'Updated file structure' },
+    ])
+  }
+
   const handleAnalyzeSelected = async () => {
     if (selectedFiles.length === 0) {
       toast({
-        title: t.noFilesSelected,
-        description: t.selectFilesToAnalyze,
+        title: language === 'en' ? t.noFilesSelected : t.noFilesSelected,
+        description: language === 'en' ? t.selectFilesToAnalyze : t.selectFilesToAnalyze,
         variant: "destructive",
       })
       return
@@ -390,11 +454,14 @@ export function BlockPage() {
 
     setIsLoading(true)
     setAnalysisProgress(0)
+    setCurrentStep(2)
+
     try {
       toast({
-        title: t.analyzingFiles,
-        description: t.processing,
+        title: language === 'en' ? t.analyzingFiles : t.analyzingFiles,
+        description: language === 'en' ? t.processing : t.processing,
       })
+
       // Simulate analysis process
       for (let i = 0; i <= 100; i += 10) {
         await new Promise(resolve => setTimeout(resolve, 200))
@@ -447,15 +514,15 @@ export function BlockPage() {
       setIsValid(true)
       setAnalysisComplete(true)
       toast({
-        title: t.analysisComplete,
-        description: t.viewResults,
+        title: language === 'en' ? t.analysisComplete : t.analysisComplete,
+        description: language === 'en' ? t.viewResults : t.viewResults,
       })
       setCurrentStep(3)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error during analysis:', error)
       toast({
-        title: "Error during analysis",
-        description: "An error occurred while analyzing the selected files.",
+        title: language === 'en' ? "Error" : "エラー",
+        description: language === 'en' ? "An error occurred while analyzing the selected files." : "選択されたファイルの分析中にエラーが発生しました。",
         variant: "destructive",
       })
     } finally {
@@ -463,284 +530,229 @@ export function BlockPage() {
     }
   }
 
-  const handleCodeChange = (newContent: string) => {
-    setFileContent(newContent)
-  }
-
-  const handleSaveChanges = async () => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      toast({
-        title: "Changes saved",
-        description: "Your changes have been successfully saved.",
-      })
-    } catch (error) {
-      console.error('Error saving changes:', error)
-      toast({
-        title: "Error saving changes",
-        description: "An error occurred while saving your changes.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleExport = () => {
-    const blob = new Blob([finalDocument], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'lingurepo-design-document.json'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-
-  const handleSelectAll = () => {
-    if (allSelected) {
-      setSelectedFiles([]);
-    } else {
-      setSelectedFiles(files.filter(file => file.type === 'file').map(file => file.path));
-    }
-    setAllSelected(!allSelected);
-  };
-
-  const renderFileTree = (files: FileType[], depth = 0) => {
-    return (
-      <ul className={`space-y-1 ${depth > 0 ? 'ml-4' : ''}`}>
-        {files.map((file, index) => (
-          <li key={index} className="flex items-center space-x-2">
-            <span className="w-4 h-4 text-xs">
-              {file.type === 'directory' ? '📁' : '📄'}
-            </span>
-            <Checkbox
-              id={`file-${file.path}`}
-              checked={selectedFiles.includes(file.path)}
-              onCheckedChange={(checked) => handleFileCheckboxChange(file.path, checked as boolean)}
-            />
-            <label
-              htmlFor={`file-${file.path}`}
-              className="text-sm cursor-pointer hover:underline"
-              onClick={() => file.type === 'file' && handleFileSelect(file.path)}
-            >
-              {file.name}
-            </label>
-          </li>
-        ))}
-      </ul>
-    )
-  }
-
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <div className="container mx-auto p-4 min-h-screen bg-background text-foreground">
-        <Card className="w-full max-w-6xl mx-auto bg-opacity-90 dark:bg-opacity-90">
-          <div className="relative overflow-hidden">
-            <ParticleAnimation />
-            <div className="relative z-10">
-              <CardHeader className="flex flex-col items-start space-y-2">
-                <div className="flex items-center space-x-4">
-                  <svg
-                    width="48"
-                    height="48"
-                    viewBox="0 0 200 200"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-12 h-12"
-                  >
-                    <path
-                      d="M60 40V160"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M40 60H160"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M120 60C140 60 160 80 160 100C160 120 140 140 120 160"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                    <g transform="translate(90, 100)">
-                      <ellipse
-                        cx="-15"
-                        cy="-5"
-                        rx="3"
-                        ry="4"
-                        fill="currentColor"
-                      />
-                      <ellipse
-                        cx="5"
-                        cy="-5"
-                        rx="3"
-                        ry="4"
-                        fill="currentColor"
-                      />
-                      <path
-                        d="M-20 10C-20 20 20 20 20 10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        strokeLinecap="round"
+      <div className="min-h-screen h-screen flex flex-col overflow-hidden bg-background text-foreground">
+        <div className="flex-1 overflow-auto">
+          <div className="container mx-auto p-4">
+            <Card className="w-full max-w-6xl mx-auto bg-opacity-90 dark:bg-opacity-90">
+              <div className="relative">
+                <ParticleAnimation />
+                <div className="relative z-10">
+                  <CardHeader className="flex flex-col items-start space-y-2">
+                    <div className="flex items-center space-x-4">
+                      <svg
+                        width="48"
+                        height="48"
+                        viewBox="0 0 200 200"
                         fill="none"
-                      />
-                    </g>
-                  </svg>
-                  <h1 className="text-3xl font-bold">LinguRepo</h1>
-                </div>
-                <CardDescription className="text-lg">{t.description}</CardDescription>
-                <div className="flex gap-2 self-end">
-                  <ThemeToggle />
-                  <LanguageToggle language={language} setLanguage={setLanguage} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <h2 className="text-xl font-semibold">{t.step1}</h2>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div className="flex space-x-4">
-                        <Input
-                          placeholder={t.repoName}
-                          value={repoName}
-                          onChange={(e) => setRepoName(e.target.value)}
-                          className="flex-grow"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-12 h-12"
+                      >
+                        <path
+                          d="M60 40V160"
+                          stroke="currentColor"
+                          strokeWidth="8"
+                          strokeLinecap="round"
                         />
-                        <Input
-                          placeholder={t.branchName}
-                          value={branchName}
-                          onChange={(e) => setBranchName(e.target.value)}
-                          className="flex-grow"
+                        <path
+                          d="M40 60H160"
+                          stroke="currentColor"
+                          strokeWidth="8"
+                          strokeLinecap="round"
                         />
-                      </div>
-                      <Button type="submit" disabled={isLoading || currentStep !== 1} className="w-full">
-                        {isLoading ? t.processing : t.analyze}
-                      </Button>
-                    </form>
-                  </div>
-
-                  {currentStep >= 2 && (
-                    <div className="space-y-2">
-                      <h2 className="text-xl font-semibold">{t.step2}</h2>
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center justify-between">
-                            <span>{t.selectFilesToAnalyze}</span>
-                            <Button 
-                              onClick={handleSelectAll} 
-                              size="sm"
-                              variant="outline"
-                            >
-                              {allSelected ? t.deselectAll : t.selectAll}
-                            </Button>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <ScrollArea className="h-[200px]">
-                            {renderFileTree(files)}
-                          </ScrollArea>
-                        </CardContent>
-                        <CardFooter>
-                          <Button 
-                            onClick={handleAnalyzeSelected} 
-                            disabled={isLoading || selectedFiles.length === 0}
-                            className="w-full"
-                          >
-                            {isLoading ? t.processing : t.analyzeSelected}
-                          </Button>
-                        </CardFooter>
-                      </Card>
+                        <path
+                          d="M120 60C140 60 160 80 160 100C160 120 140 140 120 160"
+                          stroke="currentColor"
+                          strokeWidth="8"
+                          strokeLinecap="round"
+                          fill="none"
+                        />
+                        <g transform="translate(90, 100)">
+                          <ellipse
+                            cx="-15"
+                            cy="-5"
+                            rx="3"
+                            ry="4"
+                            fill="currentColor"
+                          />
+                          <ellipse
+                            cx="5"
+                            cy="-5"
+                            rx="3"
+                            ry="4"
+                            fill="currentColor"
+                          />
+                          <path
+                            d="M-20 10C-20 20 20 20 20 10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                            fill="none"
+                          />
+                        </g>
+                      </svg>
+                      <h1 className="text-3xl font-bold">LinguRepo</h1>
                     </div>
-                  )}
+                    <CardDescription className="text-lg">{t.description}</CardDescription>
+                    <div className="flex gap-2 self-end">
+                      <ThemeToggle />
+                      <LanguageToggle language={language} setLanguage={setLanguage} />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-6 md:p-8">
+                    <ScrollArea className="h-[calc(100vh-16rem)] pr-4">
+                      <div className="space-y-6">
+                        {/* Step 1: Enter Repository Details */}
+                        {currentStep === 1 && (
+                          <div className="space-y-2">
+                            <h2 className="text-xl font-semibold">{t.step1}</h2>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                              <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 mb-4 p-2">
+                                <Input
+                                  placeholder={t.repoName}
+                                  value={repoName}
+                                  onChange={(e) => setRepoName(e.target.value)}
+                                  className="flex-grow rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 max-w-full"
+                                />
+                                <Input
+                                  placeholder={t.branchName}
+                                  value={branchName}
+                                  onChange={(e) => setBranchName(e.target.value)}
+                                  className="flex-grow rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 max-w-full"
+                                />
+                              </div>
+                              <Button type="submit" disabled={isLoading || currentStep !== 1} className="w-full">
+                                {isLoading ? t.processing : t.analyze}
+                              </Button>
+                            </form>
+                          </div>
+                        )}
 
-                  {currentStep >= 3 && (
-                    <div className="space-y-2">
-                      <h2 className="text-xl font-semibold">{t.step3}</h2>
-                      <Tabs defaultValue="template">
-                        <TabsList>
-                          <TabsTrigger value="template">{t.template}</TabsTrigger>
-                          <TabsTrigger value="structure">{t.documentStructure}</TabsTrigger>
-                          <TabsTrigger value="insights">{t.aiInsights}</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="template">
-                          <Card>
-                            <CardHeader>
-                              <CardTitle className="flex items-center justify-between">
-                                <span>{t.generatedTemplate}</span>
-                                <Button onClick={handleExport} size="sm">
-                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                                  </svg>
-                                  {t.export}
+                        {/* Step 2: Select Files to Analyze */}
+                        {currentStep === 2 && (
+                          <div className="space-y-2">
+                            <h2 className="text-xl font-semibold">{t.step2}</h2>
+                            <Card>
+                              <CardHeader>
+                                <CardTitle className="flex items-center justify-between">
+                                  <span>{t.selectFilesToAnalyze}</span>
+                                  <Button 
+                                    onClick={handleSelectAll} 
+                                    size="sm"
+                                    variant="outline"
+                                  >
+                                    {allSelected ? t.deselectAll : t.selectAll}
+                                  </Button>
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <ScrollArea className="h-[200px]">
+                                  {renderFileTree(files)}
+                                </ScrollArea>
+                              </CardContent>
+                              <CardFooter>
+                                <Button 
+                                  onClick={handleAnalyzeSelected} 
+                                  disabled={isLoading || selectedFiles.length === 0}
+                                  className="w-full"
+                                >
+                                  {isLoading ? t.processing : t.analyzeSelected}
                                 </Button>
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <ScrollArea className="h-[300px]">
-                                <pre className="text-sm">{finalDocument}</pre>
-                              </ScrollArea>
-                            </CardContent>
-                          </Card>
-                        </TabsContent>
-                        <TabsContent value="structure">
-                          <Card>
-                            <CardHeader>
-                              <CardTitle>{t.documentStructure}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <ScrollArea className="h-[300px]">
-                                <pre className="text-sm">{JSON.stringify(documentStructure, null, 2)}</pre>
-                              </ScrollArea>
-                            </CardContent>
-                          </Card>
-                        </TabsContent>
-                        <TabsContent value="insights">
-                          <Card>
-                            <CardHeader>
-                              <CardTitle>{t.aiInsights}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <ScrollArea className="h-[300px]">
-                                <p className="text-sm">{aiInsights[language as keyof typeof aiInsights]}</p>
-                              </ScrollArea>
-                            </CardContent>
-                          </Card>
-                        </TabsContent>
-                      </Tabs>
-                    </div>
-                  )}
+                              </CardFooter>
+                            </Card>
+                          </div>
+                        )}
+
+                        {/* Step 3: Review Analysis Results */}
+                        {currentStep === 3 && (
+                          <div className="space-y-2">
+                            <h2 className="text-xl font-semibold">{t.step3}</h2>
+                            <Tabs defaultValue="template">
+                              <TabsList>
+                                <TabsTrigger value="template">{t.template}</TabsTrigger>
+                                <TabsTrigger value="structure">{t.documentStructure}</TabsTrigger>
+                                <TabsTrigger value="insights">{t.aiInsights}</TabsTrigger>
+                              </TabsList>
+                              <TabsContent value="template">
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle className="flex items-center justify-between">
+                                      <span>{t.generatedTemplate}</span>
+                                      <Button onClick={handleExport} size="sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                        </svg>
+                                        {t.export}
+                                      </Button>
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <ScrollArea className="h-[300px]">
+                                      <pre className="text-sm">{finalDocument}</pre>
+                                    </ScrollArea>
+                                  </CardContent>
+                                </Card>
+                              </TabsContent>
+                              <TabsContent value="structure">
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle>{t.documentStructure}</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <ScrollArea className="h-[300px]">
+                                      <pre className="text-sm">{JSON.stringify(documentStructure, null, 2)}</pre>
+                                    </ScrollArea>
+                                  </CardContent>
+                                </Card>
+                              </TabsContent>
+                              <TabsContent value="insights">
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle>{t.aiInsights}</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <ScrollArea className="h-[300px]">
+                                      <p className="text-sm">{aiInsights[language as keyof typeof aiInsights]}</p>
+                                    </ScrollArea>
+                                  </CardContent>
+                                </Card>
+                              </TabsContent>
+                            </Tabs>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Progress Bar */}
+                      {isLoading && currentStep === 1 && (
+                        <div className="mt-4">
+                          <h3 className="text-lg font-semibold mb-2">{t.analysisProgress}</h3>
+                          <Progress value={analysisProgress} className="w-full" />
+                        </div>
+                      )}
+
+                      {/* Analysis Complete Alert */}
+                      {analysisComplete && currentStep === 3 && (
+                        <Alert className="mt-4">
+                          <AlertTitle>{t.analysisComplete}</AlertTitle>
+                          <AlertDescription>
+                            {t.viewResults}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </ScrollArea>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <Button variant="outline" onClick={() => window.location.reload()}>
+                      {t.startNewAnalysis}
+                    </Button>
+                  </CardFooter>
                 </div>
-
-                {isLoading && (
-                  <div className="mt-4">
-                    <h3 className="text-lg font-semibold mb-2">{t.analysisProgress}</h3>
-                    <Progress value={analysisProgress} className="w-full" />
-                  </div>
-                )}
-
-                {analysisComplete && (
-                  <Alert className="mt-4">
-                    <AlertTitle>{t.analysisComplete}</AlertTitle>
-                    <AlertDescription>
-                      {t.viewResults}
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => window.location.reload()}>
-                  {t.startNewAnalysis}
-                </Button>
-              </CardFooter>
-            </div>
+              </div>
+            </Card>
           </div>
-        </Card>
+        </div>
       </div>
     </ThemeProvider>
-  )
+  );
 }

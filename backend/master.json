@@ -8,7 +8,7 @@
             "purpose": "Defines the template version.",
             "category": "Template",
             "priority": 1,
-            "content": "Template Version: Not explicitly mentioned, but the template is evident from the structure and keywords.",
+            "content": "N/A",
             "fields": {
                 "t_v": {
                     "type": "string",
@@ -91,7 +91,7 @@
             "purpose": "Defines the project version.",
             "category": "Project",
             "priority": 3,
-            "content": "Not explicitly mentioned, but the version can be inferred from the repository or installation process.",
+            "content": "N/A",
             "fields": {
                 "dep_res": {
                     "type": "string",
@@ -125,7 +125,7 @@
             "purpose": "Defines the scale.",
             "category": "Scale",
             "priority": 5,
-            "content": "Not explicitly mentioned, but the tool seems to be designed for generating high-quality articles, implying a large or complex scale.",
+            "content": "N/A",
             "fields": {
                 "prio": {
                     "type": "object",
@@ -167,7 +167,7 @@
             "purpose": "Defines the style.",
             "category": "Style",
             "priority": 6,
-            "content": "Not explicitly mentioned, but the use of Groq and other LLMs suggests a modern and advanced coding style.",
+            "content": "N/A",
             "fields": {
                 "abbr": {
                     "type": "object",
@@ -221,11 +221,7 @@
             "purpose": "Defines the component name.",
             "category": "Component",
             "priority": 7,
-            "content": [
-                "Titles",
-                "Article Structures",
-                "Article Bodies"
-            ],
+            "content": "N/A",
             "fields": {
                 "map": {
                     "type": "object",
@@ -287,11 +283,7 @@
             "purpose": "Defines the component type.",
             "category": "Component",
             "priority": 8,
-            "content": [
-                "AI-generated",
-                "Editable",
-                "Customizable"
-            ],
+            "content": "N/A",
             "fields": {
                 "p_order": {
                     "type": "array",
@@ -318,7 +310,7 @@
             "purpose": "Defines the component path.",
             "category": "Component",
             "priority": 9,
-            "content": "Not explicitly mentioned, but the components are likely to be part of the ArticleGen Pro tool.",
+            "content": "N/A",
             "fields": {
                 "v": {
                     "type": "string",
@@ -335,12 +327,7 @@
             "purpose": "Defines the component dependencies.",
             "category": "Component",
             "priority": 10,
-            "content": [
-                "Groq",
-                "pip",
-                "Python 3.7+",
-                "Virtual Environment"
-            ],
+            "content": "N/A",
             "fields": {
                 "v": {
                     "type": "string",
