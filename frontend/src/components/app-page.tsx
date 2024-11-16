@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "@/hooks/use-toast"
 
-type FileType = { name: string; type: 'file' | 'directory'; path: string };
+type FileType = { name: string; type: 'file' | 'directory'; path: string; children?: FileType[] };
 type FileHistoryType = { date: string; author: string; message: string };
 
 const translations = {
@@ -59,6 +59,7 @@ const translations = {
     noFilesSelected: "No files selected. Please select at least one file to analyze.",
     selectAll: "Select All",
     deselectAll: "Deselect All",
+    noFilesFound: "No files found.",
   },
   ja: {
     description: "GitHubリポジトリ分析と設計書生成ツール",
@@ -101,6 +102,7 @@ const translations = {
     noFilesSelected: "ファイルが選択されていません。少なくとも1つのファイルを選択してください。",
     selectAll: "全て選択",
     deselectAll: "全て解除",
+    noFilesFound: "ファイルが見つかりませんでした。",
   }
 }
 
@@ -300,7 +302,8 @@ export function BlockPage() {
   const t = translations[language as keyof typeof translations]
   const [repoName, setRepoName] = useState('')
   const [branchName, setBranchName] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isFetchingFiles, setIsFetchingFiles] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [files, setFiles] = useState<FileType[]>([])
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
   const [finalDocument, setFinalDocument] = useState('')
@@ -319,6 +322,83 @@ export function BlockPage() {
   const [analysisComplete, setAnalysisComplete] = useState(false)
   const [allSelected, setAllSelected] = useState(false);
 
+  // 新しい関数: リポジトリのファイルツリーを取得
+  const fetchListRepoFiles = async () => {
+    try {
+      setIsFetchingFiles(true)
+      const response = await fetch('http://localhost:8000/list-repo-files', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ repo_name: repoName, branch_name: branchName })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || (language === 'en' ? "Failed to fetch repository files." : "リポジトリファイルの取得に失敗しました。"))
+      }
+
+      const data = await response.json()
+      setFiles(data.files)
+      setCurrentStep(2)
+      toast({
+        title: language === 'en' ? "Files fetched successfully." : "ファイルを正常に取得しました。",
+        description: language === 'en' ? "You can now select files to analyze." : "ファイルを選択して分析を開始できます。",
+      })
+    } catch (error: any) {
+      console.error('Error fetching repository files:', error)
+      toast({
+        title: language === 'en' ? "Error" : "エラー",
+        description: error.message || (language === 'en' ? "An error occurred while fetching repository files." : "リポジトリファイルの取得中にエラーが発生しました。"),
+        variant: "destructive",
+      })
+    } finally {
+      setIsFetchingFiles(false)
+    }
+  }
+
+  // 新しい関数: 選択されたファイルを解析
+  const fetchGenerateDesignDocument = async () => {
+    try {
+      setIsAnalyzing(true)
+      const response = await fetch('http://localhost:8000/generate-design-document', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ repo_name: repoName, branch_name: branchName, selected_files: selectedFiles })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || (language === 'en' ? "Failed to generate design document." : "設計書の生成に失敗しました。"))
+      }
+
+      const data = await response.json()
+      // data.final_documents はファイルごとの設計書
+      // ここでは全てのファイルの設計書を表示するために結合します
+      const combinedDocuments = Object.entries(data.final_documents).map(([file, doc]) => `## ${file}\n${JSON.stringify(doc, null, 2)}`).join('\n\n')
+      setFinalDocument(combinedDocuments)
+      setAnalysisProgress(100)
+      setAnalysisComplete(true)
+      toast({
+        title: language === 'en' ? t.analysisComplete : t.analysisComplete,
+        description: language === 'en' ? t.viewResults : t.viewResults,
+      })
+      setCurrentStep(3)
+    } catch (error: any) {
+      console.error('Error generating design document:', error)
+      toast({
+        title: language === 'en' ? "Error" : "エラー",
+        description: error.message || (language === 'en' ? "An error occurred while generating the design document." : "設計書の生成中にエラーが発生しました。"),
+        variant: "destructive",
+      })
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!repoName || !branchName) {
@@ -330,7 +410,7 @@ export function BlockPage() {
       return
     }
 
-    setIsLoading(true)
+    setIsFetchingFiles(true)
     setAnalysisProgress(0)
     setCurrentStep(1)
 
@@ -340,38 +420,17 @@ export function BlockPage() {
         description: language === 'en' ? t.processing : t.processing,
       })
 
-      // バックエンドAPIにリクエストを送信
-      const response = await fetch('http://localhost:8000/generate-design-document', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ repo_name: repoName, branch_name: branchName })
-      })
+      // リポジトリのファイルツリーを取得
+      await fetchListRepoFiles()
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || (language === 'en' ? "An error occurred." : "エラーが発生しました。"))
-      }
-
-      const data = await response.json()
-      setFinalDocument(JSON.stringify(data.final_document, null, 2))
-      setAnalysisProgress(100)
-      setAnalysisComplete(true)
-      toast({
-        title: language === 'en' ? t.analysisComplete : t.analysisComplete,
-        description: language === 'en' ? t.viewResults : t.viewResults,
-      })
-      setCurrentStep(3)
     } catch (error: any) {
-      console.error('Error during analysis:', error)
+      console.error('Error during fetching files:', error)
       toast({
         title: language === 'en' ? "Error" : "エラー",
-        description: error.message || (language === 'en' ? "An error occurred during analysis." : "分析中にエラーが発生しました。"),
+        description: error.message || (language === 'en' ? "An error occurred during file fetching." : "ファイル取得中にエラーが発生しました。"),
         variant: "destructive",
       })
-    } finally {
-      setIsLoading(false)
+      setIsFetchingFiles(false)
     }
   }
 
@@ -391,10 +450,25 @@ export function BlockPage() {
     if (allSelected) {
       setSelectedFiles([]);
     } else {
-      setSelectedFiles(files.filter(file => file.type === 'file').map(file => file.path));
+      // すべてのファイルのパスを選択
+      const allFilePaths = getAllFilePaths(files)
+      setSelectedFiles(allFilePaths);
     }
     setAllSelected(!allSelected);
   };
+
+  // すべてのファイルパスを取得する再帰関数
+  const getAllFilePaths = (files: FileType[]): string[] => {
+    let paths: string[] = [];
+    files.forEach(file => {
+      if (file.type === 'file') {
+        paths.push(file.path);
+      } else if (file.type === 'directory' && file.children) {
+        paths = paths.concat(getAllFilePaths(file.children));
+      }
+    });
+    return paths;
+  }
 
   const renderFileTree = (files: FileType[], depth = 0) => {
     return (
@@ -404,18 +478,29 @@ export function BlockPage() {
             <span className="w-4 h-4 text-xs">
               {file.type === 'directory' ? '📁' : '📄'}
             </span>
-            <Checkbox
-              id={`file-${file.path}`}
-              checked={selectedFiles.includes(file.path)}
-              onCheckedChange={(checked) => handleFileCheckboxChange(file.path, checked as boolean)}
-            />
+            {file.type === 'file' && (
+              <Checkbox
+                id={`file-${file.path}`}
+                checked={selectedFiles.includes(file.path)}
+                onCheckedChange={(checked) => handleFileCheckboxChange(file.path, checked as boolean)}
+              />
+            )}
+            {file.type === 'directory' && (
+              <span className="text-sm cursor-pointer hover:underline">{file.name}</span>
+            )}
             <label
               htmlFor={`file-${file.path}`}
-              className="text-sm cursor-pointer hover:underline"
+              className={`text-sm cursor-pointer hover:underline ${file.type === 'file' ? '' : 'ml-2'}`}
               onClick={() => file.type === 'file' && handleFileSelect(file.path)}
             >
               {file.name}
             </label>
+            {/* 再帰的にディレクトリ内のファイルを表示 */}
+            {file.type === 'directory' && (
+              <div className="ml-4">
+                {file.children && renderFileTree(file.children, depth + 1)}
+              </div>
+            )}
           </li>
         ))}
       </ul>
@@ -427,14 +512,17 @@ export function BlockPage() {
       const newSelection = checked
         ? [...prev, filePath]
         : prev.filter(f => f !== filePath);
-      setAllSelected(newSelection.length === files.filter(file => file.type === 'file').length);
+      // 全て選択されているかどうかを更新
+      const allFilePaths = getAllFilePaths(files)
+      setAllSelected(newSelection.length === allFilePaths.length);
       return newSelection;
     });
   }
 
   const handleFileSelect = (filePath: string) => {
     setSelectedFile(filePath)
-    // Simulate fetching file content
+    // ファイルの履歴や内容を表示する場合はここで設定
+    // ここではシミュレーションとしてプレースホルダーを設定
     setFileContent(`# ${filePath}\n\nThis is a placeholder content for ${filePath}. In a real application, this would be fetched from the repository.`)
     setFileHistory([
       { date: '2023-05-01', author: 'John Doe', message: 'Initial commit' },
@@ -452,7 +540,7 @@ export function BlockPage() {
       return
     }
 
-    setIsLoading(true)
+    setIsAnalyzing(true)
     setAnalysisProgress(0)
     setCurrentStep(2)
 
@@ -462,71 +550,17 @@ export function BlockPage() {
         description: language === 'en' ? t.processing : t.processing,
       })
 
-      // Simulate analysis process
-      for (let i = 0; i <= 100; i += 10) {
-        await new Promise(resolve => setTimeout(resolve, 200))
-        setAnalysisProgress(i)
-      }
+      // 選択されたファイルを解析
+      await fetchGenerateDesignDocument()
 
-      setDocumentStructure({
-        "project_id": "lingurepo_project",
-        "version": "1.0",
-        "analyzed_files": selectedFiles,
-        "modules": [
-          {
-            "id": 1,
-            "name": "Project Overview",
-            "purpose": "Defines the project basics.",
-            "category": "Overview",
-            "priority": 1,
-            "content": "LinguRepo: A GitHub Repository Analysis Tool"
-          },
-          {
-            "id": 2,
-            "name": "Architecture",
-            "purpose": "Outlines the system architecture.",
-            "category": "Technical",
-            "priority": 2,
-            "content": "Microservices architecture with Python backend and React frontend"
-          }
-        ]
-      })
-      
-      setAiInsights({
-        en: "Based on the analysis of selected files, this project appears to be a well-structured analysis tool for GitHub repositories. It utilizes advanced AI capabilities for parsing and understanding repository contents. The code structure suggests a modular approach, which is good for maintainability. Consider implementing caching mechanisms to improve performance for frequently accessed repositories.",
-        ja: "選択されたファイルの分析に基づき、このプロジェクトはGitHubリポジトリの分析ツールとして適切に構造化されているようです。リポジトリの内容を解析し理解するための高度なAI機能を活用しています。コード構造はモジュラーアプローチを示唆しており、これは保守性の観点から良好です。頻繁にアクセスされるリポジトリのパフォーマンス向上のために、キャッシュメカニズムの実装を検討することをお勧めします。"
-      })
-      
-      setFinalDocument(JSON.stringify({
-        projectName: "LinguRepo",
-        description: "A GitHub Repository Analysis and Design Document Generator",
-        version: "1.0.0",
-        architecture: "Microservices",
-        analyzedFiles: selectedFiles,
-        mainComponents: ["DataFetcher", "Parser", "Mapper", "DocumentGenerator"],
-        aiIntegration: ["Groq", "LinguStruct"],
-        recommendations: [
-          "パフォーマンス向上のためのキャッシュ実装",
-          "パーソナライズされた体験のためのユーザー認証の追加",
-          "GitLabリポジトリのサポート追加の検討"
-        ]
-      }, null, 2))
-      setIsValid(true)
-      setAnalysisComplete(true)
-      toast({
-        title: language === 'en' ? t.analysisComplete : t.analysisComplete,
-        description: language === 'en' ? t.viewResults : t.viewResults,
-      })
-      setCurrentStep(3)
     } catch (error: any) {
       console.error('Error during analysis:', error)
       toast({
         title: language === 'en' ? "Error" : "エラー",
-        description: language === 'en' ? "An error occurred while analyzing the selected files." : "選択されたファイルの分析中にエラーが発生しました。",
+        description: error.message || (language === 'en' ? "An error occurred while analyzing the selected files." : "選択されたファイルの分析中にエラーが発生しました。"),
         variant: "destructive",
       })
-    } finally {
-      setIsLoading(false)
+      setIsAnalyzing(false)
     }
   }
 
@@ -622,8 +656,8 @@ export function BlockPage() {
                                   className="flex-grow rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 max-w-full"
                                 />
                               </div>
-                              <Button type="submit" disabled={isLoading || currentStep !== 1} className="w-full">
-                                {isLoading ? t.processing : t.analyze}
+                              <Button type="submit" disabled={isFetchingFiles || currentStep !== 1} className="w-full">
+                                {isFetchingFiles ? t.processing : t.analyze}
                               </Button>
                             </form>
                           </div>
@@ -647,17 +681,19 @@ export function BlockPage() {
                                 </CardTitle>
                               </CardHeader>
                               <CardContent>
-                                <ScrollArea className="h-[200px]">
-                                  {renderFileTree(files)}
+                                <ScrollArea className="h-[400px]">
+                                  {files.length > 0 ? renderFileTree(files) : (
+                                    <p>{t.noFilesFound}</p>
+                                  )}
                                 </ScrollArea>
                               </CardContent>
                               <CardFooter>
                                 <Button 
                                   onClick={handleAnalyzeSelected} 
-                                  disabled={isLoading || selectedFiles.length === 0}
+                                  disabled={isAnalyzing || selectedFiles.length === 0}
                                   className="w-full"
                                 >
-                                  {isLoading ? t.processing : t.analyzeSelected}
+                                  {isAnalyzing ? t.processing : t.analyzeSelected}
                                 </Button>
                               </CardFooter>
                             </Card>
@@ -689,7 +725,7 @@ export function BlockPage() {
                                   </CardHeader>
                                   <CardContent>
                                     <ScrollArea className="h-[300px]">
-                                      <pre className="text-sm">{finalDocument}</pre>
+                                      <pre className="text-sm whitespace-pre-wrap break-words">{finalDocument}</pre>
                                     </ScrollArea>
                                   </CardContent>
                                 </Card>
@@ -724,10 +760,13 @@ export function BlockPage() {
                       </div>
 
                       {/* Progress Bar */}
-                      {isLoading && currentStep === 1 && (
+                      {(isFetchingFiles || isAnalyzing) && (
                         <div className="mt-4">
                           <h3 className="text-lg font-semibold mb-2">{t.analysisProgress}</h3>
-                          <Progress value={analysisProgress} className="w-full" />
+                          <Progress 
+                            value={isFetchingFiles ? 100 : analysisProgress} 
+                            className="w-full" 
+                          />
                         </div>
                       )}
 

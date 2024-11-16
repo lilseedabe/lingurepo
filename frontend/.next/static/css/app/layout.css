@@ -672,6 +672,9 @@ video {
 .mb-4 {
   margin-bottom: 1rem;
 }
+.ml-2 {
+  margin-left: 0.5rem;
+}
 .ml-4 {
   margin-left: 1rem;
 }
@@ -692,9 +695,6 @@ video {
 }
 .grid {
   display: grid;
-}
-.contents {
-  display: contents;
 }
 .h-10 {
   height: 2.5rem;
@@ -717,11 +717,11 @@ video {
 .h-9 {
   height: 2.25rem;
 }
-.h-\[200px\] {
-  height: 200px;
-}
 .h-\[300px\] {
   height: 300px;
+}
+.h-\[400px\] {
+  height: 400px;
 }
 .h-\[calc\(100vh-16rem\)\] {
   height: calc(100vh - 16rem);
@@ -867,6 +867,12 @@ video {
 }
 .whitespace-nowrap {
   white-space: nowrap;
+}
+.whitespace-pre-wrap {
+  white-space: pre-wrap;
+}
+.break-words {
+  overflow-wrap: break-word;
 }
 .rounded-\[inherit\] {
   border-radius: inherit;

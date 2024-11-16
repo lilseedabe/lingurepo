@@ -8,7 +8,7 @@
             "purpose": "Defines the template version.",
             "category": "Template",
             "priority": 1,
-            "content": "N/A",
+            "content": null,
             "fields": {
                 "t_v": {
                     "type": "string",
@@ -91,7 +91,7 @@
             "purpose": "Defines the project version.",
             "category": "Project",
             "priority": 3,
-            "content": "N/A",
+            "content": null,
             "fields": {
                 "dep_res": {
                     "type": "string",
@@ -125,7 +125,7 @@
             "purpose": "Defines the scale.",
             "category": "Scale",
             "priority": 5,
-            "content": "N/A",
+            "content": null,
             "fields": {
                 "prio": {
                     "type": "object",
@@ -167,7 +167,7 @@
             "purpose": "Defines the style.",
             "category": "Style",
             "priority": 6,
-            "content": "N/A",
+            "content": null,
             "fields": {
                 "abbr": {
                     "type": "object",
@@ -221,7 +221,7 @@
             "purpose": "Defines the component name.",
             "category": "Component",
             "priority": 7,
-            "content": "N/A",
+            "content": null,
             "fields": {
                 "map": {
                     "type": "object",
@@ -283,7 +283,7 @@
             "purpose": "Defines the component type.",
             "category": "Component",
             "priority": 8,
-            "content": "N/A",
+            "content": null,
             "fields": {
                 "p_order": {
                     "type": "array",
@@ -310,7 +310,7 @@
             "purpose": "Defines the component path.",
             "category": "Component",
             "priority": 9,
-            "content": "N/A",
+            "content": null,
             "fields": {
                 "v": {
                     "type": "string",
@@ -327,7 +327,10 @@
             "purpose": "Defines the component dependencies.",
             "category": "Component",
             "priority": 10,
-            "content": "N/A",
+            "content": [
+                "Groq",
+                "other Large Language Models (LLMs)"
+            ],
             "fields": {
                 "v": {
                     "type": "string",
