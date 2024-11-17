@@ -108,7 +108,7 @@
             "purpose": "Defines the description.",
             "category": "Description",
             "priority": 4,
-            "content": "ArticleGen Pro is a powerful article generation tool that leverages the capabilities of Groq and other Large Language Models (LLMs) to help you create high-quality articles effortlessly.",
+            "content": "Create high-quality articles with ease, leveraging intuitive editing features to refine AI-generated titles and article structures before producing the full content.",
             "fields": {
                 "err_handling": {
                     "type": "string",
@@ -327,10 +327,731 @@
             "purpose": "Defines the component dependencies.",
             "category": "Component",
             "priority": 10,
-            "content": [
-                "Groq",
-                "other Large Language Models (LLMs)"
-            ],
+            "content": null,
+            "fields": {
+                "v": {
+                    "type": "string",
+                    "label": "Technology Version",
+                    "priority": 1,
+                    "required": true
+                },
+                "languages": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "label": "Programming Languages",
+                    "priority": 2,
+                    "required": true
+                },
+                "frameworks": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "label": "Frameworks",
+                    "priority": 3,
+                    "required": false
+                },
+                "tools": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "label": "Development Tools",
+                    "priority": 4,
+                    "required": false
+                }
+            }
+        },
+        {
+            "id": 1,
+            "name": "Template Version",
+            "purpose": "Defines the template version.",
+            "category": "Template",
+            "priority": 1,
+            "content": null,
+            "fields": {
+                "t_v": {
+                    "type": "string",
+                    "label": "Template Version",
+                    "priority": 1,
+                    "required": true
+                },
+                "p_n": {
+                    "type": "string",
+                    "label": "Project Name",
+                    "priority": 2,
+                    "required": true
+                },
+                "p_v": {
+                    "type": "string",
+                    "label": "Project Version",
+                    "priority": 3,
+                    "required": true
+                },
+                "desc": {
+                    "type": "string",
+                    "label": "Description",
+                    "priority": 4,
+                    "required": true
+                },
+                "scale": {
+                    "type": "string",
+                    "enum": [
+                        "s",
+                        "m",
+                        "l",
+                        "e"
+                    ],
+                    "label": "Scale",
+                    "priority": 5,
+                    "required": true
+                }
+            }
+        },
+        {
+            "id": 2,
+            "name": "Project Name",
+            "purpose": "Defines the project name.",
+            "category": "Project",
+            "priority": 2,
+            "content": null,
+            "fields": {
+                "v": {
+                    "type": "string",
+                    "label": "Architecture Version",
+                    "priority": 1,
+                    "required": true
+                },
+                "st": {
+                    "type": "string",
+                    "label": "Architecture Style",
+                    "enum": [
+                        "Monolithic",
+                        "Microservices",
+                        "Serverless",
+                        "Hybrid"
+                    ],
+                    "priority": 2,
+                    "required": true
+                },
+                "c_n": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "label": "System Components",
+                    "priority": 3,
+                    "required": true
+                }
+            }
+        },
+        {
+            "id": 3,
+            "name": "Project Version",
+            "purpose": "Defines the project version.",
+            "category": "Project",
+            "priority": 3,
+            "content": null,
+            "fields": {
+                "dep_res": {
+                    "type": "string",
+                    "label": "Dependency Resolution",
+                    "default": "top-down",
+                    "priority": 1,
+                    "required": true
+                }
+            }
+        },
+        {
+            "id": 4,
+            "name": "Description",
+            "purpose": "Defines the description.",
+            "category": "Description",
+            "priority": 4,
+            "content": null,
+            "fields": {
+                "err_handling": {
+                    "type": "string",
+                    "label": "Error Handling",
+                    "priority": 1,
+                    "required": false,
+                    "default": "log-and-correct"
+                }
+            }
+        },
+        {
+            "id": 5,
+            "name": "Scale",
+            "purpose": "Defines the scale.",
+            "category": "Scale",
+            "priority": 5,
+            "content": null,
+            "fields": {
+                "prio": {
+                    "type": "object",
+                    "label": "Priority",
+                    "priority": 5,
+                    "required": true,
+                    "properties": {
+                        "c": {
+                            "type": "integer",
+                            "label": "Critical",
+                            "priority": 1,
+                            "required": true
+                        },
+                        "h": {
+                            "type": "integer",
+                            "label": "High",
+                            "priority": 2,
+                            "required": true
+                        },
+                        "m": {
+                            "type": "integer",
+                            "label": "Medium",
+                            "priority": 3,
+                            "required": true
+                        },
+                        "l": {
+                            "type": "integer",
+                            "label": "Low",
+                            "priority": 4,
+                            "required": true
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 6,
+            "name": "Style",
+            "purpose": "Defines the style.",
+            "category": "Style",
+            "priority": 6,
+            "content": null,
+            "fields": {
+                "abbr": {
+                    "type": "object",
+                    "label": "Abbreviations",
+                    "priority": 1,
+                    "required": true,
+                    "properties": {
+                        "auth": {
+                            "type": "string",
+                            "label": "Authentication",
+                            "priority": 1,
+                            "required": true
+                        },
+                        "authz": {
+                            "type": "string",
+                            "label": "Authorization",
+                            "priority": 2,
+                            "required": true
+                        },
+                        "ms": {
+                            "type": "string",
+                            "label": "Microservices",
+                            "priority": 3,
+                            "required": true
+                        },
+                        "perf": {
+                            "type": "string",
+                            "label": "Performance",
+                            "priority": 4,
+                            "required": true
+                        },
+                        "svc": {
+                            "type": "string",
+                            "label": "Service",
+                            "priority": 5,
+                            "required": true
+                        },
+                        "arch": {
+                            "type": "string",
+                            "label": "Architecture",
+                            "priority": 6,
+                            "required": true
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 7,
+            "name": "Component Name",
+            "purpose": "Defines the component name.",
+            "category": "Component",
+            "priority": 7,
+            "content": null,
+            "fields": {
+                "map": {
+                    "type": "object",
+                    "label": "Mappings",
+                    "priority": 1,
+                    "properties": {
+                        "auth": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "label": "Authentication Mapping",
+                            "priority": 1,
+                            "required": false
+                        },
+                        "authz": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "label": "Authorization Mapping",
+                            "priority": 2,
+                            "required": false
+                        },
+                        "ms": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "label": "Microservices Mapping",
+                            "priority": 3,
+                            "required": false
+                        },
+                        "perf": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "label": "Performance Mapping",
+                            "priority": 4,
+                            "required": false
+                        },
+                        "svc": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "label": "Service Mapping",
+                            "priority": 5,
+                            "required": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 8,
+            "name": "Component Type",
+            "purpose": "Defines the component type.",
+            "category": "Component",
+            "priority": 8,
+            "content": null,
+            "fields": {
+                "p_order": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "label": "Property Order",
+                    "default": [
+                        "meta",
+                        "arch",
+                        "tech",
+                        "svc",
+                        "sec",
+                        "perf"
+                    ],
+                    "priority": 1,
+                    "required": true
+                }
+            }
+        },
+        {
+            "id": 9,
+            "name": "Component Path",
+            "purpose": "Defines the component path.",
+            "category": "Component",
+            "priority": 9,
+            "content": null,
+            "fields": {
+                "v": {
+                    "type": "string",
+                    "label": "Version",
+                    "priority": 1,
+                    "required": true,
+                    "default": "1.3"
+                }
+            }
+        },
+        {
+            "id": 10,
+            "name": "Component Dependencies",
+            "purpose": "Defines the component dependencies.",
+            "category": "Component",
+            "priority": 10,
+            "content": null,
+            "fields": {
+                "v": {
+                    "type": "string",
+                    "label": "Technology Version",
+                    "priority": 1,
+                    "required": true
+                },
+                "languages": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "label": "Programming Languages",
+                    "priority": 2,
+                    "required": true
+                },
+                "frameworks": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "label": "Frameworks",
+                    "priority": 3,
+                    "required": false
+                },
+                "tools": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "label": "Development Tools",
+                    "priority": 4,
+                    "required": false
+                }
+            }
+        },
+        {
+            "id": 1,
+            "name": "Template Version",
+            "purpose": "Defines the template version.",
+            "category": "Template",
+            "priority": 1,
+            "content": null,
+            "fields": {
+                "t_v": {
+                    "type": "string",
+                    "label": "Template Version",
+                    "priority": 1,
+                    "required": true
+                },
+                "p_n": {
+                    "type": "string",
+                    "label": "Project Name",
+                    "priority": 2,
+                    "required": true
+                },
+                "p_v": {
+                    "type": "string",
+                    "label": "Project Version",
+                    "priority": 3,
+                    "required": true
+                },
+                "desc": {
+                    "type": "string",
+                    "label": "Description",
+                    "priority": 4,
+                    "required": true
+                },
+                "scale": {
+                    "type": "string",
+                    "enum": [
+                        "s",
+                        "m",
+                        "l",
+                        "e"
+                    ],
+                    "label": "Scale",
+                    "priority": 5,
+                    "required": true
+                }
+            }
+        },
+        {
+            "id": 2,
+            "name": "Project Name",
+            "purpose": "Defines the project name.",
+            "category": "Project",
+            "priority": 2,
+            "content": null,
+            "fields": {
+                "v": {
+                    "type": "string",
+                    "label": "Architecture Version",
+                    "priority": 1,
+                    "required": true
+                },
+                "st": {
+                    "type": "string",
+                    "label": "Architecture Style",
+                    "enum": [
+                        "Monolithic",
+                        "Microservices",
+                        "Serverless",
+                        "Hybrid"
+                    ],
+                    "priority": 2,
+                    "required": true
+                },
+                "c_n": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "label": "System Components",
+                    "priority": 3,
+                    "required": true
+                }
+            }
+        },
+        {
+            "id": 3,
+            "name": "Project Version",
+            "purpose": "Defines the project version.",
+            "category": "Project",
+            "priority": 3,
+            "content": null,
+            "fields": {
+                "dep_res": {
+                    "type": "string",
+                    "label": "Dependency Resolution",
+                    "default": "top-down",
+                    "priority": 1,
+                    "required": true
+                }
+            }
+        },
+        {
+            "id": 4,
+            "name": "Description",
+            "purpose": "Defines the description.",
+            "category": "Description",
+            "priority": 4,
+            "content": null,
+            "fields": {
+                "err_handling": {
+                    "type": "string",
+                    "label": "Error Handling",
+                    "priority": 1,
+                    "required": false,
+                    "default": "log-and-correct"
+                }
+            }
+        },
+        {
+            "id": 5,
+            "name": "Scale",
+            "purpose": "Defines the scale.",
+            "category": "Scale",
+            "priority": 5,
+            "content": null,
+            "fields": {
+                "prio": {
+                    "type": "object",
+                    "label": "Priority",
+                    "priority": 5,
+                    "required": true,
+                    "properties": {
+                        "c": {
+                            "type": "integer",
+                            "label": "Critical",
+                            "priority": 1,
+                            "required": true
+                        },
+                        "h": {
+                            "type": "integer",
+                            "label": "High",
+                            "priority": 2,
+                            "required": true
+                        },
+                        "m": {
+                            "type": "integer",
+                            "label": "Medium",
+                            "priority": 3,
+                            "required": true
+                        },
+                        "l": {
+                            "type": "integer",
+                            "label": "Low",
+                            "priority": 4,
+                            "required": true
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 6,
+            "name": "Style",
+            "purpose": "Defines the style.",
+            "category": "Style",
+            "priority": 6,
+            "content": null,
+            "fields": {
+                "abbr": {
+                    "type": "object",
+                    "label": "Abbreviations",
+                    "priority": 1,
+                    "required": true,
+                    "properties": {
+                        "auth": {
+                            "type": "string",
+                            "label": "Authentication",
+                            "priority": 1,
+                            "required": true
+                        },
+                        "authz": {
+                            "type": "string",
+                            "label": "Authorization",
+                            "priority": 2,
+                            "required": true
+                        },
+                        "ms": {
+                            "type": "string",
+                            "label": "Microservices",
+                            "priority": 3,
+                            "required": true
+                        },
+                        "perf": {
+                            "type": "string",
+                            "label": "Performance",
+                            "priority": 4,
+                            "required": true
+                        },
+                        "svc": {
+                            "type": "string",
+                            "label": "Service",
+                            "priority": 5,
+                            "required": true
+                        },
+                        "arch": {
+                            "type": "string",
+                            "label": "Architecture",
+                            "priority": 6,
+                            "required": true
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 7,
+            "name": "Component Name",
+            "purpose": "Defines the component name.",
+            "category": "Component",
+            "priority": 7,
+            "content": null,
+            "fields": {
+                "map": {
+                    "type": "object",
+                    "label": "Mappings",
+                    "priority": 1,
+                    "properties": {
+                        "auth": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "label": "Authentication Mapping",
+                            "priority": 1,
+                            "required": false
+                        },
+                        "authz": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "label": "Authorization Mapping",
+                            "priority": 2,
+                            "required": false
+                        },
+                        "ms": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "label": "Microservices Mapping",
+                            "priority": 3,
+                            "required": false
+                        },
+                        "perf": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "label": "Performance Mapping",
+                            "priority": 4,
+                            "required": false
+                        },
+                        "svc": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "label": "Service Mapping",
+                            "priority": 5,
+                            "required": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 8,
+            "name": "Component Type",
+            "purpose": "Defines the component type.",
+            "category": "Component",
+            "priority": 8,
+            "content": null,
+            "fields": {
+                "p_order": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "label": "Property Order",
+                    "default": [
+                        "meta",
+                        "arch",
+                        "tech",
+                        "svc",
+                        "sec",
+                        "perf"
+                    ],
+                    "priority": 1,
+                    "required": true
+                }
+            }
+        },
+        {
+            "id": 9,
+            "name": "Component Path",
+            "purpose": "Defines the component path.",
+            "category": "Component",
+            "priority": 9,
+            "content": null,
+            "fields": {
+                "v": {
+                    "type": "string",
+                    "label": "Version",
+                    "priority": 1,
+                    "required": true,
+                    "default": "1.3"
+                }
+            }
+        },
+        {
+            "id": 10,
+            "name": "Component Dependencies",
+            "purpose": "Defines the component dependencies.",
+            "category": "Component",
+            "priority": 10,
+            "content": null,
             "fields": {
                 "v": {
                     "type": "string",

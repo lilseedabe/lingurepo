@@ -44,6 +44,9 @@ class GenerateDesignDocumentRequest(BaseModel):
     branch_name: str
     selected_files: List[str]
 
+class GenerateDesignDocumentResponse(BaseModel):
+    final_documents: Dict[str, Any]  # {'file_path': design_document}
+
 @app.post("/list-repo-files", response_model=ListRepoFilesResponse)
 async def list_repo_files_endpoint(request: ListRepoFilesRequest):
     try:
@@ -74,7 +77,7 @@ async def list_repo_files_endpoint(request: ListRepoFilesRequest):
         logger.error(f"Error in list_repo_files_endpoint: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-@app.post("/generate-design-document")
+@app.post("/generate-design-document", response_model=GenerateDesignDocumentResponse)
 async def generate_design_document_endpoint(request: GenerateDesignDocumentRequest):
     try:
         # 環境変数のロードと検証（APIキーなどは.envから取得）
@@ -104,18 +107,18 @@ async def generate_design_document_endpoint(request: GenerateDesignDocumentReque
         all_parsed_data = {}
         for file_path, content in files_content.items():
             if not content:
-                logger.warning(f"No content fetched for {file_path}. Skipping parsing.")
+                logger.warning(f"Content for {file_path} is empty. Skipping.")
                 continue
             parsed_data = parser.parse_readme(content, parsing_rules)
             all_parsed_data[file_path] = parsed_data
-
+        
         # マッピング
         mapper = Mapper(key_mapping)
-        mapped_data = {}
+        mapped_data = []
         for file_path, parsed_data in all_parsed_data.items():
             mapped = mapper.map_data(parsed_data)
             if mapped:
-                mapped_data[file_path] = mapped
+                mapped_data.extend(mapped)  # リストをフラット化
             else:
                 logger.warning(f"No mapped data for {file_path}.")
         
@@ -125,19 +128,13 @@ async def generate_design_document_endpoint(request: GenerateDesignDocumentReque
         
         # ドキュメント生成
         generator = DocumentGenerator(env['LINGUSTRUCT_LICENSE_KEY'])
-        final_documents = {}
-        for file_path, mapped in mapped_data.items():
-            final_document = generator.generate_final_document(mapped)
-            if final_document:
-                final_documents[file_path] = final_document
-            else:
-                logger.warning(f"Final document could not be generated for {file_path}.")
+        final_document = generator.generate_final_document(mapped_data)
         
-        if not final_documents:
-            logger.warning("Final documents could not be generated")
-            raise HTTPException(status_code=500, detail="Final documents could not be generated")
+        if not final_document:
+            logger.warning("Final document could not be generated")
+            raise HTTPException(status_code=500, detail="Final document could not be generated")
         
-        return {"final_documents": final_documents}
+        return {"final_documents": final_document}
     
     except HTTPException as he:
         raise he

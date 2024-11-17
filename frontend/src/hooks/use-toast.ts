@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
 // Inspired by react-hot-toast library
-import * as React from "react"
+import * as React from "react";
 
 // `ToastActionElement` と `ToastProps` の型定義
 type ToastActionElement = React.ReactElement<any, string | React.JSXElementConstructor<any>>;
@@ -140,9 +140,11 @@ function dispatch(action: Action) {
   });
 }
 
-type Toast = Omit<ToasterToast, "id">;
+type Toast = Omit<ToasterToast, "id"> & {
+  duration?: number; // duration プロパティを追加
+};
 
-function toast({ ...props }: Toast) {
+function toast({ duration, ...props }: Toast) {
   const id = genId();
 
   const update = (props: ToasterToast) =>
@@ -163,6 +165,10 @@ function toast({ ...props }: Toast) {
       },
     },
   });
+
+  if (duration) {
+    setTimeout(dismiss, duration); // duration の値に基づいて自動的に閉じる
+  }
 
   return {
     id: id,

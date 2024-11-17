@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "@/hooks/use-toast"
+import ProjectModification from './project-modification'
 
 type FileType = { name: string; type: 'file' | 'directory'; path: string; children?: FileType[] };
 type FileHistoryType = { date: string; author: string; message: string };
@@ -60,6 +61,8 @@ const translations = {
     selectAll: "Select All",
     deselectAll: "Deselect All",
     noFilesFound: "No files found.",
+    mainPage: "Repository Analysis",
+    modificationPage: "Project Modification",
   },
   ja: {
     description: "GitHubリポジトリ分析と設計書生成ツール",
@@ -103,6 +106,8 @@ const translations = {
     selectAll: "全て選択",
     deselectAll: "全て解除",
     noFilesFound: "ファイルが見つかりませんでした。",
+    mainPage: "リポジトリ分析",
+    modificationPage: "プロジェクト修正",
   }
 }
 
@@ -320,7 +325,8 @@ export function BlockPage() {
   })
   const [currentStep, setCurrentStep] = useState(1)
   const [analysisComplete, setAnalysisComplete] = useState(false)
-  const [allSelected, setAllSelected] = useState(false);
+  const [allSelected, setAllSelected] = useState(false)
+  const [currentPage, setCurrentPage] = useState<'main' | 'modification'>('main')
 
   // 新しい関数: リポジトリのファイルツリーを取得
   const fetchListRepoFiles = async () => {
@@ -376,9 +382,10 @@ export function BlockPage() {
       }
 
       const data = await response.json()
-      // data.final_documents はファイルごとの設計書
-      // ここでは全てのファイルの設計書を表示するために結合します
-      const combinedDocuments = Object.entries(data.final_documents).map(([file, doc]) => `## ${file}\n${JSON.stringify(doc, null, 2)}`).join('\n\n')
+      // data.final_documents は統合された設計書
+      const combinedDocuments = Object.entries(data.final_documents)
+        .map(([file, doc]) => `## ${file}\n${JSON.stringify(doc, null, 2)}`)
+        .join('\n\n')
       setFinalDocument(combinedDocuments)
       setAnalysisProgress(100)
       setAnalysisComplete(true)
@@ -473,8 +480,8 @@ export function BlockPage() {
   const renderFileTree = (files: FileType[], depth = 0) => {
     return (
       <ul className={`space-y-1 ${depth > 0 ? 'ml-4' : ''}`}>
-        {files.map((file, index) => (
-          <li key={index} className="flex items-center space-x-2">
+        {files.map((file) => (
+          <li key={file.path} className="flex items-center space-x-2">
             <span className="w-4 h-4 text-xs">
               {file.type === 'directory' ? '📁' : '📄'}
             </span>
@@ -485,20 +492,23 @@ export function BlockPage() {
                 onCheckedChange={(checked) => handleFileCheckboxChange(file.path, checked as boolean)}
               />
             )}
-            {file.type === 'directory' && (
+            {file.type === 'directory' ? (
+              // ディレクトリの場合は名前のみ表示
               <span className="text-sm cursor-pointer hover:underline">{file.name}</span>
+            ) : (
+              // ファイルの場合はラベルを表示
+              <label
+                htmlFor={`file-${file.path}`}
+                className="text-sm cursor-pointer hover:underline"
+                onClick={() => handleFileSelect(file.path)}
+              >
+                {file.name}
+              </label>
             )}
-            <label
-              htmlFor={`file-${file.path}`}
-              className={`text-sm cursor-pointer hover:underline ${file.type === 'file' ? '' : 'ml-2'}`}
-              onClick={() => file.type === 'file' && handleFileSelect(file.path)}
-            >
-              {file.name}
-            </label>
             {/* 再帰的にディレクトリ内のファイルを表示 */}
-            {file.type === 'directory' && (
+            {file.type === 'directory' && file.children && (
               <div className="ml-4">
-                {file.children && renderFileTree(file.children, depth + 1)}
+                {renderFileTree(file.children, depth + 1)}
               </div>
             )}
           </li>
@@ -566,7 +576,7 @@ export function BlockPage() {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <div className="min-h-screen h-screen flex flex-col overflow-hidden bg-background text-foreground">
+      <div className="min-h-screen w-screen h-screen flex flex-col overflow-hidden bg-background text-foreground">
         <div className="flex-1 overflow-auto">
           <div className="container mx-auto p-4">
             <Card className="w-full max-w-6xl mx-auto bg-opacity-90 dark:bg-opacity-90">
@@ -630,15 +640,29 @@ export function BlockPage() {
                     </div>
                     <CardDescription className="text-lg">{t.description}</CardDescription>
                     <div className="flex gap-2 self-end">
+                      <div className="flex space-x-2 mb-4">
+                        <Button
+                          variant={currentPage === 'main' ? "default" : "outline"}
+                          onClick={() => setCurrentPage('main')}
+                        >
+                          {t.mainPage}
+                        </Button>
+                        <Button
+                          variant={currentPage === 'modification' ? "default" : "outline"}
+                          onClick={() => setCurrentPage('modification')}
+                        >
+                          {t.modificationPage}
+                        </Button>
+                      </div>
                       <ThemeToggle />
                       <LanguageToggle language={language} setLanguage={setLanguage} />
                     </div>
                   </CardHeader>
                   <CardContent className="p-6 md:p-8">
-                    <ScrollArea className="h-[calc(100vh-16rem)] pr-4">
-                      <div className="space-y-6">
-                        {/* Step 1: Enter Repository Details */}
-                        {currentStep === 1 && (
+                    {currentPage === 'main' ? (
+                      <ScrollArea className="h-full pr-4">
+                        <div className="space-y-6">
+                          {/* Step 1: Enter Repository Details */}
                           <div className="space-y-2">
                             <h2 className="text-xl font-semibold">{t.step1}</h2>
                             <form onSubmit={handleSubmit} className="space-y-4">
@@ -656,15 +680,13 @@ export function BlockPage() {
                                   className="flex-grow rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 max-w-full"
                                 />
                               </div>
-                              <Button type="submit" disabled={isFetchingFiles || currentStep !== 1} className="w-full">
+                              <Button type="submit" disabled={isFetchingFiles} className="w-full">
                                 {isFetchingFiles ? t.processing : t.analyze}
                               </Button>
                             </form>
                           </div>
-                        )}
 
-                        {/* Step 2: Select Files to Analyze */}
-                        {currentStep === 2 && (
+                          {/* Step 2: Select Files to Analyze */}
                           <div className="space-y-2">
                             <h2 className="text-xl font-semibold">{t.step2}</h2>
                             <Card>
@@ -698,10 +720,8 @@ export function BlockPage() {
                               </CardFooter>
                             </Card>
                           </div>
-                        )}
 
-                        {/* Step 3: Review Analysis Results */}
-                        {currentStep === 3 && (
+                          {/* Step 3: Review Analysis Results */}
                           <div className="space-y-2">
                             <h2 className="text-xl font-semibold">{t.step3}</h2>
                             <Tabs defaultValue="template">
@@ -756,30 +776,32 @@ export function BlockPage() {
                               </TabsContent>
                             </Tabs>
                           </div>
-                        )}
-                      </div>
 
-                      {/* Progress Bar */}
-                      {(isFetchingFiles || isAnalyzing) && (
-                        <div className="mt-4">
-                          <h3 className="text-lg font-semibold mb-2">{t.analysisProgress}</h3>
-                          <Progress 
-                            value={isFetchingFiles ? 100 : analysisProgress} 
-                            className="w-full" 
-                          />
+                          {/* Progress Bar */}
+                          {(isFetchingFiles || isAnalyzing) && (
+                            <div className="mt-4">
+                              <h3 className="text-lg font-semibold mb-2">{t.analysisProgress}</h3>
+                              <Progress 
+                                value={isFetchingFiles ? 100 : analysisProgress} 
+                                className="w-full" 
+                              />
+                            </div>
+                          )}
+
+                          {/* Analysis Complete Alert */}
+                          {analysisComplete && (
+                            <Alert className="mt-4">
+                              <AlertTitle>{t.analysisComplete}</AlertTitle>
+                              <AlertDescription>
+                                {t.viewResults}
+                              </AlertDescription>
+                            </Alert>
+                          )}
                         </div>
-                      )}
-
-                      {/* Analysis Complete Alert */}
-                      {analysisComplete && currentStep === 3 && (
-                        <Alert className="mt-4">
-                          <AlertTitle>{t.analysisComplete}</AlertTitle>
-                          <AlertDescription>
-                            {t.viewResults}
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </ScrollArea>
+                      </ScrollArea>
+                    ) : (
+                      <ProjectModification language={language as 'en' | 'ja'} />
+                    )}
                   </CardContent>
                   <CardFooter className="flex justify-between">
                     <Button variant="outline" onClick={() => window.location.reload()}>
