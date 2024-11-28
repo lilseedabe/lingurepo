@@ -32,7 +32,7 @@ class DocumentGenerator:
 
     def generate_final_document(self, mapped_data: List[Dict[str, Any]], project_id: str, version: str) -> Dict[str, Any]:
         """
-        テンプレートに基づいて設計書を生成
+        設計書の最終形を生成。
         """
         try:
             modules_with_fields = []
@@ -50,6 +50,15 @@ class DocumentGenerator:
             adaptive_patterns = self.generate_adaptive_patterns(modules_with_fields)
             quality_assurance = self.generate_quality_assurance()
 
+            # CI/CDパイプラインの生成
+            ci_cd_pipeline = self.generate_ci_cd_pipeline({
+                "project_name": project_id,
+                "version": version
+            })
+
+            # テストケースの生成
+            test_cases = self.generate_test_cases(modules_with_fields)
+
             # 最終ドキュメントの構築
             final_document = {
                 "meta": {
@@ -62,7 +71,9 @@ class DocumentGenerator:
                 "modules": modules_with_fields,
                 "relationships": relationships,
                 "adaptive_patterns": adaptive_patterns,
-                "quality_assurance": quality_assurance
+                "quality_assurance": quality_assurance,
+                "ci_cd_pipeline": ci_cd_pipeline,
+                "test_cases": test_cases
             }
 
             logger.info("Final document generated successfully.")
@@ -145,3 +156,37 @@ class DocumentGenerator:
         }
         logger.debug("Quality assurance defined.")
         return quality_assurance
+
+    def generate_ci_cd_pipeline(self, project_meta: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        CI/CDパイプライン構成を生成。
+        """
+        pipeline = {
+            "stages": ["build", "test", "deploy"],
+            "jobs": {
+                "build": {
+                    "script": ["npm install", "npm run build"]
+                },
+                "test": {
+                    "script": ["pytest tests/"]
+                },
+                "deploy": {
+                    "script": ["docker build -t project:latest .", "docker push registry/project:latest"]
+                }
+            }
+        }
+        logger.debug("CI/CD pipeline generated.")
+        return pipeline
+
+    def generate_test_cases(self, modules: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        各モジュールに対するテストケースを生成。
+        """
+        test_cases = []
+        for module in modules:
+            test_cases.append({
+                "moduleName": module["name"],
+                "description": f"Test cases for {module['name']} functionality."
+            })
+        logger.debug("Test cases generated.")
+        return test_cases

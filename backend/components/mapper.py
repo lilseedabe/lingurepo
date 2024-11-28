@@ -87,6 +87,7 @@ class Mapper:
                 tech_stack_module["content"]["languages"].add(file_type.capitalize())
         # Convert sets to lists
         tech_stack_module["content"]["languages"] = list(tech_stack_module["content"]["languages"])
+        tech_stack_module["content"]["frameworks"] = list(tech_stack_module["content"]["frameworks"])
         tech_stack_module["content"]["tools"] = list(tech_stack_module["content"]["tools"])
         modules.append(tech_stack_module)
         logger.debug("Added Technology Stack module.")

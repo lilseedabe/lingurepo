@@ -17,6 +17,8 @@ import ProjectModification from './project-modification'
 
 type FileType = { name: string; type: 'file' | 'directory'; path: string; children?: FileType[] };
 type FileHistoryType = { date: string; author: string; message: string };
+type TestCaseType = { moduleName: string; description: string };
+type CiCdPipelineType = any; // Define a more specific type if available
 
 const translations = {
   en: {
@@ -48,6 +50,9 @@ const translations = {
     analysisProgress: "Analysis Progress",
     documentStructure: "Document Structure",
     aiInsights: "AI Insights",
+    testCases: "Test Cases",
+    ciCd: "CI/CD",
+    ciCdPipeline: "CI/CD Pipeline",
     selectFilesToAnalyze: "Select Files to Analyze",
     analyzeSelected: "Analyze Selected Files",
     step1: "Step 1: Enter Repository Details",
@@ -93,6 +98,9 @@ const translations = {
     analysisProgress: "分析の進捗",
     documentStructure: "文書構造",
     aiInsights: "AI洞察",
+    testCases: "テストケース",
+    ciCd: "CI/CD",
+    ciCdPipeline: "CI/CDパイプライン",
     selectFilesToAnalyze: "分析するファイルを選択",
     analyzeSelected: "選択したファイルを分析",
     step1: "ステップ1: リポジトリ詳細を入力",
@@ -323,6 +331,8 @@ export function BlockPage() {
     en: '',
     ja: ''
   })
+  const [testCases, setTestCases] = useState<TestCaseType[]>([])
+  const [ciCdPipeline, setCiCdPipeline] = useState<CiCdPipelineType | null>(null)
   const [currentStep, setCurrentStep] = useState(1)
   const [analysisComplete, setAnalysisComplete] = useState(false)
   const [allSelected, setAllSelected] = useState(false)
@@ -383,8 +393,10 @@ export function BlockPage() {
 
       const data = await response.json()
       // data.final_documents は統合された設計書
-      const finalDoc = data.final_documents
-      setFinalDocument(JSON.stringify(finalDoc, null, 2))
+      const combinedDocuments = JSON.stringify(data.final_documents, null, 2)
+      setFinalDocument(combinedDocuments)
+      setCiCdPipeline(data.final_documents.ci_cd_pipeline || null)
+      setTestCases(data.final_documents.test_cases || [])
       setAnalysisProgress(100)
       setAnalysisComplete(true)
       toast({
@@ -725,8 +737,8 @@ export function BlockPage() {
                             <Tabs defaultValue="template">
                               <TabsList>
                                 <TabsTrigger value="template">{t.template}</TabsTrigger>
-                                <TabsTrigger value="structure">{t.documentStructure}</TabsTrigger>
-                                <TabsTrigger value="insights">{t.aiInsights}</TabsTrigger>
+                                <TabsTrigger value="test-cases">{t.testCases}</TabsTrigger>
+                                <TabsTrigger value="ci-cd">{t.ciCd}</TabsTrigger>
                               </TabsList>
                               <TabsContent value="template">
                                 <Card>
@@ -748,26 +760,38 @@ export function BlockPage() {
                                   </CardContent>
                                 </Card>
                               </TabsContent>
-                              <TabsContent value="structure">
+                              <TabsContent value="test-cases">
                                 <Card>
                                   <CardHeader>
-                                    <CardTitle>{t.documentStructure}</CardTitle>
+                                    <CardTitle>{t.testCases}</CardTitle>
                                   </CardHeader>
                                   <CardContent>
                                     <ScrollArea className="h-[300px]">
-                                      <pre className="text-sm">{JSON.stringify(documentStructure, null, 2)}</pre>
+                                      <ul>
+                                        {testCases.length > 0 ? testCases.map((testCase, index) => (
+                                          <li key={index} className="mb-2">
+                                            <strong>{testCase.moduleName}</strong>: {testCase.description}
+                                          </li>
+                                        )) : (
+                                          <p>{language === 'en' ? "No test cases available." : "利用可能なテストケースがありません。"}</p>
+                                        )}
+                                      </ul>
                                     </ScrollArea>
                                   </CardContent>
                                 </Card>
                               </TabsContent>
-                              <TabsContent value="insights">
+                              <TabsContent value="ci-cd">
                                 <Card>
                                   <CardHeader>
-                                    <CardTitle>{t.aiInsights}</CardTitle>
+                                    <CardTitle>{t.ciCdPipeline}</CardTitle>
                                   </CardHeader>
                                   <CardContent>
                                     <ScrollArea className="h-[300px]">
-                                      <p className="text-sm">{aiInsights[language as keyof typeof aiInsights]}</p>
+                                      {ciCdPipeline ? (
+                                        <pre className="text-sm whitespace-pre-wrap break-words">{JSON.stringify(ciCdPipeline, null, 2)}</pre>
+                                      ) : (
+                                        <p>{language === 'en' ? "No CI/CD pipeline data available." : "利用可能なCI/CDパイプラインデータがありません。"}</p>
+                                      )}
                                     </ScrollArea>
                                   </CardContent>
                                 </Card>
@@ -783,6 +807,11 @@ export function BlockPage() {
                                 value={isFetchingFiles ? 100 : analysisProgress} 
                                 className="w-full" 
                               />
+                              <ul className="mt-2 list-disc list-inside text-sm">
+                                <li>{isFetchingFiles ? t.fetchingFiles : language === 'en' ? "Files fetched" : "ファイル取得完了"}</li>
+                                <li>{isAnalyzing ? t.analyzingFiles : language === 'en' ? "Analysis complete" : "分析完了"}</li>
+                                <li>{analysisComplete ? t.analysisComplete : language === 'en' ? "Pending design document generation" : "設計書生成待ち"}</li>
+                              </ul>
                             </div>
                           )}
 
