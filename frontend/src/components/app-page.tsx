@@ -383,10 +383,8 @@ export function BlockPage() {
 
       const data = await response.json()
       // data.final_documents は統合された設計書
-      const combinedDocuments = Object.entries(data.final_documents)
-        .map(([file, doc]) => `## ${file}\n${JSON.stringify(doc, null, 2)}`)
-        .join('\n\n')
-      setFinalDocument(combinedDocuments)
+      const finalDoc = data.final_documents
+      setFinalDocument(JSON.stringify(finalDoc, null, 2))
       setAnalysisProgress(100)
       setAnalysisComplete(true)
       toast({

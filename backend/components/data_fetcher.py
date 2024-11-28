@@ -1,4 +1,6 @@
+import ast
 import json
+import yaml
 from typing import Optional, List, Dict, Union
 from components.api_clients import APIClients
 from utils.logger import setup_logger
@@ -96,26 +98,22 @@ class DataFetcher:
         file_contents = {}
         for file_path in file_paths:
             try:
-                # Toolhouse 仕様に基づいたリクエストを作成
                 messages = [{
                     "role": "user",
                     "content": f'github_file({{"operation": "read", "path": "{file_path}"}})'
                 }]
                 logger.info(f"Fetching content of file: {file_path}")
                 
-                # Groq AI へのリクエストを送信
                 response = self.client.chat.completions.create(
                     model="llama3-70b-8192",
                     messages=messages,
                     tools=self.toolhouse.get_tools()
                 )
 
-                # ツール実行結果を取得
                 result = self.toolhouse.run_tools(response)
                 if not result or not any(item['role'] == 'tool' for item in result):
                     raise ValueError(f"Toolhouse returned an invalid or empty response for file: {file_path}")
 
-                # ツールのレスポンスを処理
                 tool_response = next(item for item in result if item['role'] == 'tool')
                 content = tool_response.get('content', '').strip()
                 
@@ -134,3 +132,82 @@ class DataFetcher:
         if not file_contents:
             logger.warning("No file contents were successfully fetched.")
         return file_contents
+
+    def analyze_dependencies(self, file_contents: Dict[str, str]) -> Dict[str, Dict[str, List[str]]]:
+        """
+        ファイル間の依存関係を解析し、分類
+        """
+        dependencies = {}
+        for file_path, content in file_contents.items():
+            if file_path.endswith(".py"):
+                dependencies[file_path] = self._analyze_python_dependencies(content)
+            elif file_path.endswith((".json", ".yaml", ".yml")):
+                dependencies[file_path] = self._analyze_json_yaml_dependencies(content)
+            else:
+                dependencies[file_path] = {"standard_libraries": [], "external_libraries": [], "custom_modules": []}
+        logger.debug(f"Dependencies: {dependencies}")
+        return dependencies
+
+    def _analyze_python_dependencies(self, content: str) -> Dict[str, List[str]]:
+        """
+        Pythonファイルの依存関係を分類
+        """
+        try:
+            tree = ast.parse(content)
+            standard_libraries = []
+            external_libraries = []
+            custom_modules = []
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        self._classify_dependency(alias.name, standard_libraries, external_libraries, custom_modules)
+                elif isinstance(node, ast.ImportFrom):
+                    module = node.module or ""
+                    self._classify_dependency(module, standard_libraries, external_libraries, custom_modules)
+            return {
+                "standard_libraries": standard_libraries,
+                "external_libraries": external_libraries,
+                "custom_modules": custom_modules
+            }
+        except Exception as e:
+            logger.error(f"Error analyzing Python dependencies: {e}")
+            return {"standard_libraries": [], "external_libraries": [], "custom_modules": []}
+
+    def _classify_dependency(self, module_name: str, std_libs: List[str], ext_libs: List[str], custom_mods: List[str]):
+        """
+        依存関係を分類
+        """
+        if module_name in {"os", "sys", "time", "json", "re", "logging"}:
+            std_libs.append(module_name)
+        elif module_name in {"dotenv", "fastapi", "requests", "psycopg2"}:
+            ext_libs.append(module_name)
+        else:
+            custom_mods.append(module_name)
+
+    def _analyze_json_yaml_dependencies(self, content: str) -> Dict[str, List[str]]:
+        """
+        JSONやYAMLファイルの依存関係を解析
+        """
+        try:
+            data = yaml.safe_load(content)
+            if isinstance(data, dict):
+                return {"dependencies": data.get("dependencies", [])}
+            return {"dependencies": []}
+        except yaml.YAMLError:
+            logger.warning("Invalid YAML/JSON content.")
+        except Exception as e:
+            logger.error(f"Error analyzing JSON/YAML dependencies: {e}")
+        return {"dependencies": []}
+
+    def extract_meta_information(self, readme_content: str) -> Dict[str, str]:
+        """
+        README.md からプロジェクトのメタ情報を抽出
+        """
+        meta_info = {}
+        lines = readme_content.splitlines()
+        for line in lines:
+            if "Project Name:" in line:
+                meta_info["project_name"] = line.split(":", 1)[1].strip()
+            elif "Version:" in line:
+                meta_info["version"] = line.split(":", 1)[1].strip()
+        return meta_info

@@ -7,7 +7,6 @@ from components.parser import Parser
 from components.mapper import Mapper
 from components.document_generator import DocumentGenerator
 from utils.logger import setup_logger
-import json
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Dict, Any
 
@@ -28,10 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class DesignDocumentRequest(BaseModel):
-    repo_name: str
-    branch_name: str
-
+# Pydanticモデル
 class ListRepoFilesRequest(BaseModel):
     repo_name: str
     branch_name: str
@@ -50,17 +46,18 @@ class GenerateDesignDocumentResponse(BaseModel):
 @app.post("/list-repo-files", response_model=ListRepoFilesResponse)
 async def list_repo_files_endpoint(request: ListRepoFilesRequest):
     try:
-        # 環境変数のロードと検証（APIキーなどは.envから取得）
+        # 環境変数のロード
         env = load_environment()
         logger.info("Environment variables loaded successfully")
         
-        # APIクライアントの初期化
+        # APIクライアントと一時保存管理の初期化
         api_clients = APIClients(
             groq_api_key=env['GROQ_API_KEY'],
             toolhouse_api_key=env['TOOLHOUSE_API_KEY'],
             lingu_key=env['LINGUSTRUCT_LICENSE_KEY'],
             user_id=env['USER_ID']
         )
+        storage_manager = None  # TempStorageManager は現在使用していない
         
         # データ取得
         fetcher = DataFetcher(api_clients)
@@ -80,60 +77,56 @@ async def list_repo_files_endpoint(request: ListRepoFilesRequest):
 @app.post("/generate-design-document", response_model=GenerateDesignDocumentResponse)
 async def generate_design_document_endpoint(request: GenerateDesignDocumentRequest):
     try:
-        # 環境変数のロードと検証（APIキーなどは.envから取得）
+        # 環境変数のロード
         env = load_environment()
         logger.info("Environment variables loaded successfully")
-        
-        # APIクライアントの初期化
+
+        # コンポーネントの初期化
         api_clients = APIClients(
             groq_api_key=env['GROQ_API_KEY'],
             toolhouse_api_key=env['TOOLHOUSE_API_KEY'],
             lingu_key=env['LINGUSTRUCT_LICENSE_KEY'],
             user_id=env['USER_ID']
         )
-        
+
         # データ取得
         fetcher = DataFetcher(api_clients)
         files_content = fetcher.fetch_files_content(request.repo_name, request.branch_name, request.selected_files)
+
         if not files_content:
             logger.warning("Selected files content could not be fetched")
             raise HTTPException(status_code=404, detail="Selected files content could not be fetched")
-        
+
+        # 依存関係の解析
+        dependencies = fetcher.analyze_dependencies(files_content)
+
         # 解析
-        parser = Parser(api_clients, env['LINGUSTRUCT_LICENSE_KEY'])
-        key_mapping = parser.load_key_mapping()
-        parsing_rules = parser.get_parsing_rules(key_mapping)
-        
-        all_parsed_data = {}
+        parser = Parser()
+        parsed_data = {}
         for file_path, content in files_content.items():
-            if not content:
-                logger.warning(f"Content for {file_path} is empty. Skipping.")
-                continue
-            parsed_data = parser.parse_readme(content, parsing_rules)
-            all_parsed_data[file_path] = parsed_data
-        
+            file_type = file_path.split('.')[-1].lower()
+            parsed = parser.parse_file(file_path, content, file_type)
+            parsed_data[file_path] = parsed
+
+        # プロジェクトメタデータの取得（例として固定値を使用）
+        project_meta = {
+            "project_name": request.repo_name,
+            "branch_name": request.branch_name
+        }
+
         # マッピング
-        mapper = Mapper(key_mapping)
-        mapped_data = []
-        for file_path, parsed_data in all_parsed_data.items():
-            mapped = mapper.map_data(parsed_data)
-            if mapped:
-                mapped_data.extend(mapped)  # リストをフラット化
-            else:
-                logger.warning(f"No mapped data for {file_path}.")
-        
-        if not mapped_data:
-            logger.warning("No data was mapped successfully")
-            raise HTTPException(status_code=400, detail="No data was mapped successfully")
-        
+        mapper = Mapper(key_mapping={})  # key_mapping は現在未使用
+        mapped_data = mapper.map_data_to_modules(parsed_data, dependencies, project_meta)
+
         # ドキュメント生成
         generator = DocumentGenerator(env['LINGUSTRUCT_LICENSE_KEY'])
-        final_document = generator.generate_final_document(mapped_data)
-        
+        final_document = generator.generate_final_document(mapped_data, project_id="lingurepo_project", version="1.0")
+
         if not final_document:
             logger.warning("Final document could not be generated")
             raise HTTPException(status_code=500, detail="Final document could not be generated")
-        
+
+        logger.info("Final document generated successfully.")
         return {"final_documents": final_document}
     
     except HTTPException as he:
