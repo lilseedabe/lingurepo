@@ -5,6 +5,23 @@ from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+# ファイル拡張子を言語名にマッピングする辞書
+EXTENSION_TO_LANGUAGE = {
+    "py": "python",
+    "js": "javascript",
+    "jsx": "javascript",
+    "ts": "typescript",
+    "tsx": "typescript",
+    "json": "json",
+    "md": "markdown",
+    "css": "css",
+    "rs": "rust",
+    "go": "go"
+}
+
+# サポートされる言語名
+SUPPORTED_LANGUAGES = {"json", "python", "typescript", "rust", "go", "javascript", "markdown", "css"}
+
 class Parser:
     def __init__(self):
         pass
@@ -12,23 +29,35 @@ class Parser:
     def parse_file(self, file_path: str, file_content: str, file_type: str) -> Dict[str, Any]:
         logger.info(f"Parsing file: {file_path} of type: {file_type}")
 
-        if file_type == "json":
-            return self.parse_json(file_content)
-        elif file_type == "python":
-            return self.parse_python_code(file_content)
-        elif file_type == "typescript":
-            return self.parse_typescript_code(file_content)
-        elif file_type == "rust":
-            return self.parse_rust_code(file_content)
-        elif file_type == "go":
-            return self.parse_go_code(file_content)
-        elif file_type == "javascript":
-            return self.parse_javascript_code(file_content)
-        elif file_type == "markdown":
-            return self.parse_markdown(file_content)
-        else:
+        # 拡張子から言語名を取得
+        language = EXTENSION_TO_LANGUAGE.get(file_type)
+        if not language:
             logger.warning(f"Unsupported file type: {file_type}")
-            return {"error": "Unsupported file type"}
+            return {"error": f"Unsupported file type: {file_type}"}
+
+        if language not in SUPPORTED_LANGUAGES:
+            logger.warning(f"Unsupported language after mapping: {language}")
+            return {"error": f"Unsupported language: {language}"}
+
+        if language == "json":
+            return self.parse_json(file_content)
+        elif language == "python":
+            return self.parse_python_code(file_content)
+        elif language == "typescript":
+            return self.parse_typescript_code(file_content)
+        elif language == "rust":
+            return self.parse_rust_code(file_content)
+        elif language == "go":
+            return self.parse_go_code(file_content)
+        elif language == "javascript":
+            return self.parse_javascript_code(file_content)
+        elif language == "markdown":
+            return self.parse_markdown(file_content)
+        elif language == "css":
+            return self.parse_css_file(file_content)
+        else:
+            logger.warning(f"Unexpected language encountered: {language}")
+            return {"error": "Unexpected language"}
 
     def parse_json(self, file_content: str) -> Dict[str, Any]:
         try:
@@ -124,3 +153,13 @@ class Parser:
         except Exception as e:
             logger.error(f"Error parsing Markdown: {e}")
             raise ValueError("Error parsing Markdown")
+
+    def parse_css_file(self, file_content: str) -> Dict[str, Any]:
+        try:
+            # 基本的なCSSのパース例（必要に応じて詳細な解析を追加）
+            selectors = re.findall(r'([^{]+){', file_content)
+            logger.debug(f"Parsed CSS: {len(selectors)} selectors.")
+            return {"selectors": selectors}
+        except Exception as e:
+            logger.error(f"Error parsing CSS file: {e}")
+            raise ValueError("Error parsing CSS file")

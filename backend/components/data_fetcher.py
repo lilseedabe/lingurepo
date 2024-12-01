@@ -4,10 +4,24 @@ import yaml
 from typing import Optional, List, Dict, Union
 from components.api_clients import APIClients
 from utils.logger import setup_logger
+import re
 
 logger = setup_logger(__name__)
 
 class DataFetcher:
+    PYTHON_STANDARD_LIBRARIES = {
+        "os", "sys", "time", "json", "re", "logging", "collections", "datetime", "math",
+        "itertools", "functools", "pathlib", "subprocess", "uuid", "typing", "itertools"
+    }
+
+    TYPESCRIPT_STANDARD_LIBRARIES = {
+        "fs", "path", "os", "crypto", "http", "url"
+    }
+
+    JAVASCRIPT_STANDARD_LIBRARIES = {
+        "fs", "path", "os", "crypto", "http", "url"
+    }
+
     def __init__(self, api_clients: APIClients):
         self.client = api_clients.groq
         self.toolhouse = api_clients.toolhouse
@@ -141,10 +155,19 @@ class DataFetcher:
         for file_path, content in file_contents.items():
             if file_path.endswith(".py"):
                 dependencies[file_path] = self._analyze_python_dependencies(content)
+            elif file_path.endswith((".ts", ".tsx")):
+                dependencies[file_path] = self._analyze_typescript_dependencies(content)
+            elif file_path.endswith((".js", ".jsx")):
+                dependencies[file_path] = self._analyze_javascript_dependencies(content)
             elif file_path.endswith((".json", ".yaml", ".yml")):
                 dependencies[file_path] = self._analyze_json_yaml_dependencies(content)
             else:
-                dependencies[file_path] = {"standard_libraries": [], "external_libraries": [], "custom_modules": []}
+                dependencies[file_path] = {
+                    "standard_libraries": [],
+                    "external_libraries": [],
+                    "custom_modules": [],
+                    "dependencies": []
+                }
         logger.debug(f"Dependencies: {dependencies}")
         return dependencies
 
@@ -157,32 +180,102 @@ class DataFetcher:
             standard_libraries = []
             external_libraries = []
             custom_modules = []
+            dependencies = []
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
                     for alias in node.names:
-                        self._classify_dependency(alias.name, standard_libraries, external_libraries, custom_modules)
+                        module_name = alias.name.split('.')[0]
+                        self._classify_dependency(module_name, standard_libraries, external_libraries, custom_modules)
+                        dependencies.append(module_name)
                 elif isinstance(node, ast.ImportFrom):
-                    module = node.module or ""
-                    self._classify_dependency(module, standard_libraries, external_libraries, custom_modules)
+                    if node.module:
+                        module_name = node.module.split('.')[0]
+                        self._classify_dependency(module_name, standard_libraries, external_libraries, custom_modules)
+                        dependencies.append(module_name)
             return {
-                "standard_libraries": standard_libraries,
-                "external_libraries": external_libraries,
-                "custom_modules": custom_modules
+                "standard_libraries": sorted(list(set(standard_libraries))),
+                "external_libraries": sorted(list(set(external_libraries))),
+                "custom_modules": sorted(list(set(custom_modules))),
+                "dependencies": sorted(list(set(dependencies)))
             }
         except Exception as e:
             logger.error(f"Error analyzing Python dependencies: {e}")
-            return {"standard_libraries": [], "external_libraries": [], "custom_modules": []}
+            return {
+                "standard_libraries": [],
+                "external_libraries": [],
+                "custom_modules": [],
+                "dependencies": []
+            }
 
-    def _classify_dependency(self, module_name: str, std_libs: List[str], ext_libs: List[str], custom_mods: List[str]):
+    def _analyze_typescript_dependencies(self, content: str) -> Dict[str, List[str]]:
         """
-        依存関係を分類
+        TypeScriptファイルの依存関係を分類
         """
-        if module_name in {"os", "sys", "time", "json", "re", "logging"}:
-            std_libs.append(module_name)
-        elif module_name in {"dotenv", "fastapi", "requests", "psycopg2"}:
-            ext_libs.append(module_name)
-        else:
-            custom_mods.append(module_name)
+        try:
+            # import 文の正規表現
+            import_pattern = re.compile(r'import\s+(?:.*?\s+from\s+)?[\'"]([^\'"]+)[\'"]')
+            imports = import_pattern.findall(content)
+            standard_libraries = []
+            external_libraries = []
+            custom_modules = []
+            dependencies = []
+            for module in imports:
+                if module in self.TYPESCRIPT_STANDARD_LIBRARIES:
+                    standard_libraries.append(module)
+                elif module.startswith('.') or module.startswith('/'):
+                    custom_modules.append(module)
+                else:
+                    external_libraries.append(module)
+                dependencies.append(module)
+            return {
+                "standard_libraries": sorted(list(set(standard_libraries))),
+                "external_libraries": sorted(list(set(external_libraries))),
+                "custom_modules": sorted(list(set(custom_modules))),
+                "dependencies": sorted(list(set(dependencies)))
+            }
+        except Exception as e:
+            logger.error(f"Error analyzing TypeScript dependencies: {e}")
+            return {
+                "standard_libraries": [],
+                "external_libraries": [],
+                "custom_modules": [],
+                "dependencies": []
+            }
+
+    def _analyze_javascript_dependencies(self, content: str) -> Dict[str, List[str]]:
+        """
+        JavaScriptファイルの依存関係を分類
+        """
+        try:
+            # import 文の正規表現
+            import_pattern = re.compile(r'import\s+(?:.*?\s+from\s+)?[\'"]([^\'"]+)[\'"]')
+            imports = import_pattern.findall(content)
+            standard_libraries = []
+            external_libraries = []
+            custom_modules = []
+            dependencies = []
+            for module in imports:
+                if module in self.JAVASCRIPT_STANDARD_LIBRARIES:
+                    standard_libraries.append(module)
+                elif module.startswith('.') or module.startswith('/'):
+                    custom_modules.append(module)
+                else:
+                    external_libraries.append(module)
+                dependencies.append(module)
+            return {
+                "standard_libraries": sorted(list(set(standard_libraries))),
+                "external_libraries": sorted(list(set(external_libraries))),
+                "custom_modules": sorted(list(set(custom_modules))),
+                "dependencies": sorted(list(set(dependencies)))
+            }
+        except Exception as e:
+            logger.error(f"Error analyzing JavaScript dependencies: {e}")
+            return {
+                "standard_libraries": [],
+                "external_libraries": [],
+                "custom_modules": [],
+                "dependencies": []
+            }
 
     def _analyze_json_yaml_dependencies(self, content: str) -> Dict[str, List[str]]:
         """
@@ -190,14 +283,43 @@ class DataFetcher:
         """
         try:
             data = yaml.safe_load(content)
+            dependencies = []
             if isinstance(data, dict):
-                return {"dependencies": data.get("dependencies", [])}
-            return {"dependencies": []}
+                # 依存関係を定義しているフィールドを抽出
+                dependencies = data.get("dependencies", [])
+                if isinstance(dependencies, list):
+                    dependencies = [dep for dep in dependencies if isinstance(dep, str)]
+                else:
+                    dependencies = []
+            return {
+                "standard_libraries": [],
+                "external_libraries": [],
+                "custom_modules": [],
+                "dependencies": sorted(list(set(dependencies)))
+            }
         except yaml.YAMLError:
             logger.warning("Invalid YAML/JSON content.")
         except Exception as e:
             logger.error(f"Error analyzing JSON/YAML dependencies: {e}")
-        return {"dependencies": []}
+        return {
+            "standard_libraries": [],
+            "external_libraries": [],
+            "custom_modules": [],
+            "dependencies": []
+        }
+
+    def _classify_dependency(self, module_name: str, std_libs: List[str], ext_libs: List[str], custom_mods: List[str]):
+        """
+        依存関係を分類
+        """
+        if module_name in self.PYTHON_STANDARD_LIBRARIES:
+            std_libs.append(module_name)
+        elif module_name in self.TYPESCRIPT_STANDARD_LIBRARIES or module_name in self.JAVASCRIPT_STANDARD_LIBRARIES:
+            std_libs.append(module_name)
+        elif module_name in {"dotenv", "fastapi", "requests", "psycopg2", "react", "next"}:
+            ext_libs.append(module_name)
+        else:
+            custom_mods.append(module_name)
 
     def extract_meta_information(self, readme_content: str) -> Dict[str, str]:
         """
@@ -207,7 +329,7 @@ class DataFetcher:
         lines = readme_content.splitlines()
         for line in lines:
             if "Project Name:" in line:
-                meta_info["project_name"] = line.split(":", 1)[1].strip()
+                meta_info["p_n"] = line.split(":", 1)[1].strip()
             elif "Version:" in line:
-                meta_info["version"] = line.split(":", 1)[1].strip()
+                meta_info["p_v"] = line.split(":", 1)[1].strip()
         return meta_info

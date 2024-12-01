@@ -108,14 +108,15 @@ async def generate_design_document_endpoint(request: GenerateDesignDocumentReque
             parsed = parser.parse_file(file_path, content, file_type)
             parsed_data[file_path] = parsed
 
-        # プロジェクトメタデータの取得（例として固定値を使用）
-        project_meta = {
-            "project_name": request.repo_name,
-            "branch_name": request.branch_name
-        }
+        # プロジェクトメタデータの取得（README.mdを解析）
+        readme_content = files_content.get("README.md", "")
+        project_meta = fetcher.extract_meta_information(readme_content)
 
         # マッピング
-        mapper = Mapper(key_mapping={})  # key_mapping は現在未使用
+        API_URL = "https://lingustruct.onrender.com/lingu_struct/key_mapping"  # APIエンドポイントURL
+        LICENSE_KEY = env['LINGUSTRUCT_LICENSE_KEY']  # 環境変数から取得したライセンスキー
+
+        mapper = Mapper(api_url=API_URL, license_key=LICENSE_KEY)  # 修正箇所
         mapped_data = mapper.map_data_to_modules(parsed_data, dependencies, project_meta)
 
         # ドキュメント生成
