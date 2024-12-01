@@ -121,7 +121,7 @@ async def generate_design_document_endpoint(request: GenerateDesignDocumentReque
 
         # ドキュメント生成
         generator = DocumentGenerator(env['LINGUSTRUCT_LICENSE_KEY'])
-        final_document = generator.generate_final_document(mapped_data, project_id="lingurepo_project", version="1.0")
+        final_document = generator.generate_final_document(mapped_data["modules"], project_id="lingurepo_project", version="1.0")  # 修正箇所
 
         if not final_document:
             logger.warning("Final document could not be generated")

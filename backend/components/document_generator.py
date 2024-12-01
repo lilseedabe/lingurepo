@@ -1,6 +1,5 @@
 import requests
 import json
-import os
 from typing import List, Dict, Any
 from utils.logger import setup_logger
 
@@ -24,42 +23,53 @@ class DocumentGenerator:
             logger.info(f"Template for module {module_id} loaded successfully from API.")
             return template_data
         except requests.HTTPError as http_err:
-            logger.error(f"HTTP error occurred when fetching module {module_id}: {http_err}")
-            raise
+            if response.status_code == 404:
+                logger.warning(f"Template for module {module_id} not found: {http_err}")
+            else:
+                logger.error(f"HTTP error occurred when fetching module {module_id}: {http_err}")
+            return None
         except Exception as e:
             logger.error(f"Failed to load template for module {module_id}: {e}")
-            raise
+            return None
 
     def generate_final_document(self, mapped_data: List[Dict[str, Any]], project_id: str, version: str) -> Dict[str, Any]:
         """
-        設計書の最終形を生成。
+        Generate the final design document.
         """
         try:
             modules_with_fields = []
             for module in mapped_data:
+                if not isinstance(module, dict):
+                    logger.error(f"Module is not a dictionary: {module}")
+                    continue
+
                 module_id = module["id"]
                 template_data = self.fetch_template(module_id)
+                if not template_data:
+                    logger.warning(f"Skipping module {module_id} due to missing template.")
+                    continue
+
                 module["fields"] = template_data.get("fields", {})
                 modules_with_fields.append(module)
                 logger.debug(f"Module {module_id} fields populated.")
 
-            # 依存関係の追加
+            # Add relationships
             relationships = self.generate_relationships(modules_with_fields)
 
-            # Adaptive Patterns と Quality Assurance の追加
+            # Add Adaptive Patterns and Quality Assurance
             adaptive_patterns = self.generate_adaptive_patterns(modules_with_fields)
             quality_assurance = self.generate_quality_assurance()
 
-            # CI/CDパイプラインの生成
+            # Generate CI/CD pipeline
             ci_cd_pipeline = self.generate_ci_cd_pipeline({
                 "project_name": project_id,
                 "version": version
             })
 
-            # テストケースの生成
+            # Generate test cases
             test_cases = self.generate_test_cases(modules_with_fields)
 
-            # 最終ドキュメントの構築
+            # Construct the final document
             final_document = {
                 "meta": {
                     "document_type": "system_design_document",
@@ -85,9 +95,8 @@ class DocumentGenerator:
 
     def generate_relationships(self, modules: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        モジュール間の関係性を定義
+        Define relationships between modules.
         """
-        # ここでは静的な関係性を定義します。必要に応じて動的に生成可能です。
         relationships = [
             {
                 "source": 1,
@@ -119,7 +128,7 @@ class DocumentGenerator:
 
     def generate_adaptive_patterns(self, modules: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Adaptive Patterns を定義
+        Define Adaptive Patterns.
         """
         adaptive_patterns = {
             "high_security": {
@@ -142,7 +151,7 @@ class DocumentGenerator:
 
     def generate_quality_assurance(self) -> Dict[str, Any]:
         """
-        Quality Assurance を定義
+        Define Quality Assurance.
         """
         quality_assurance = {
             "coverage": {
@@ -159,7 +168,7 @@ class DocumentGenerator:
 
     def generate_ci_cd_pipeline(self, project_meta: Dict[str, Any]) -> Dict[str, Any]:
         """
-        CI/CDパイプライン構成を生成。
+        Generate CI/CD pipeline configuration.
         """
         pipeline = {
             "stages": ["build", "test", "deploy"],
@@ -180,7 +189,7 @@ class DocumentGenerator:
 
     def generate_test_cases(self, modules: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        各モジュールに対するテストケースを生成。
+        Generate test cases for each module.
         """
         test_cases = []
         for module in modules:
